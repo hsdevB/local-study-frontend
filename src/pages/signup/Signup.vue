@@ -26,10 +26,10 @@
                 />
                 <button
                   type="button"
-                  class="btn btn-outline-secondary"
+                  class="btn btn-verify"
                   @click="checkUserIdDuplicate"
                 >
-                  중복확인
+                  중복 확인
                 </button>
               </div>
             </div>
@@ -84,7 +84,7 @@
                 />
                 <button
                   type="button"
-                  class="btn btn-outline-secondary"
+                  class="btn btn-verify"
                   @click="sendEmailVerification"
                 >
                   이메일 인증
@@ -295,8 +295,8 @@
   }
   
   .btn-primary:hover {
-    background-color: #5a3f2e;
-    border-color: #5a3f2e;
+    background-color: #8b6b4a;
+    border-color: #8b6b4a;
   }
   
   .btn-secondary {
@@ -399,17 +399,20 @@
   }
 
   /* 중복확인, 이메일인증 버튼 스타일 */
-  .btn-outline-secondary {
-    border-radius: 10px;
-    border-color: #6f4e37;
-    color: #6f4e37;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-
-  .btn-outline-secondary:hover {
+  .btn-verify {
     background-color: #6f4e37;
     border-color: #6f4e37;
+    color: white;
+    font-weight: 500;
+    min-width: 100px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+  }
+
+  .btn-verify:hover {
+    background-color: #8b6b4a;
+    border-color: #8b6b4a;
     color: white;
   }
 
@@ -485,6 +488,10 @@
 
   .gender-toggle .form-check-label:hover {
     background-color: #f0e9e3;
+  }
+
+  .gap-2 {
+    gap: 0.5rem;
   }
   </style>
   
