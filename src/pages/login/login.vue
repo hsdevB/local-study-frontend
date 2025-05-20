@@ -62,10 +62,6 @@ const handleLogin = () => {
   }
 }
 
-const goToSignup = () => {
-  router.push('/signup')
-}
-
 const goToMain = () => {
   router.push('/')
 }
