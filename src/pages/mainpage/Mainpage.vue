@@ -104,6 +104,7 @@ const categories = ref([])
 const isLoggedIn = ref(true)
 const username = ref('')
 const selectedCategory = ref(null)
+const searchQuery = ref('')
 
 // 지역 선택 관련 상태
 const selectedSido = ref('')
@@ -119,16 +120,69 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const itemsPerPage = 9 // 한 페이지당 9개 (3x3)
 
+// 검색어와 문자열의 유사도를 계산하는 함수
+const calculateSimilarity = (str1, str2) => {
+  const s1 = str1.toLowerCase()
+  const s2 = str2.toLowerCase()
+  
+  // 완전 일치
+  if (s1 === s2) return 1
+  
+  // 부분 일치
+  if (s1.includes(s2) || s2.includes(s1)) return 0.8
+  
+  // 단어 단위로 비교
+  const words1 = s1.split(/\s+/)
+  const words2 = s2.split(/\s+/)
+  
+  let matchCount = 0
+  for (const word1 of words1) {
+    for (const word2 of words2) {
+      if (word1.includes(word2) || word2.includes(word1)) {
+        matchCount++
+      }
+    }
+  }
+  
+  return matchCount / Math.max(words1.length, words2.length)
+}
+
 // 필터링된 스터디 목록
 const filteredStudies = computed(() => {
   if (!selectedCategory.value) return []
   
+  let filtered = studies.value.filter(study => 
+    study.categoryId === selectedCategory.value.id
+  )
+
+  // 검색어가 있는 경우 필터링
+  if (searchQuery.value) {
+    const query = searchQuery.value.trim()
+    if (query) {
+      filtered = filtered.filter(study => {
+        const titleSimilarity = calculateSimilarity(study.title, query)
+        const contentSimilarity = calculateSimilarity(study.content, query)
+        return titleSimilarity > 0.5 || contentSimilarity > 0.5
+      })
+    }
+  }
+  
   const startIndex = (currentPage.value - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   
-  return studies.value
-    .filter(study => study.categoryId === selectedCategory.value.id)
-    .slice(startIndex, endIndex)
+  return filtered.slice(startIndex, endIndex)
+})
+
+// 검색 처리 함수
+const handleSearch = (query) => {
+  console.log('Search query received:', query) // 디버깅용 로그
+  searchQuery.value = query
+  currentPage.value = 1
+}
+
+// 검색 함수를 전역으로 노출
+defineExpose({
+  handleSearch
 })
 
 // 카테고리 데이터 가져오기
@@ -211,8 +265,8 @@ const fetchStudies = async () => {
       {
         id: 2,
         categoryId: 1,
-        title: '웹 개발 스터디',
-        content: '프론트엔드와 백엔드 개발을 함께 배워요.',
+        title: '자격증도전반',
+        content: '가나다라마바사.',
         author: '김철수',
         currentMembers: 4,
         maxMembers: 6,

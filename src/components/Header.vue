@@ -8,10 +8,11 @@
         </div>
 
         <!-- 검색창 -->
-        <form class="d-flex" role="search">
+        <form class="d-flex" role="search" @submit.prevent="handleSearch">
           <input
             class="form-control me-2"
             type="search"
+            v-model="searchInput"
             placeholder="검색어를 입력하세요"
             aria-label="Search"
           />
@@ -25,13 +26,28 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const searchInput = ref('')
 
 const goToHome = () => {
   router.push('/')
 }
+
+const handleSearch = () => {
+  if (searchInput.value.trim()) {
+    // 현재 페이지가 메인 페이지가 아닌 경우 메인 페이지로 이동
+    if (router.currentRoute.value.path !== '/') {
+      router.push('/')
+    }
+    // 검색 이벤트 발생
+    emit('search', searchInput.value)
+  }
+}
+
+const emit = defineEmits(['search'])
 </script>
 
 <style scoped>
