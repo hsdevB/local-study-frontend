@@ -1,7 +1,11 @@
 <template>
   <div class="main-container">
-    <h1>Welcome to Vue 3</h1>
-    <p>{{ message }}</p>
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h1>Welcome to Vue 3</h1>
+        <p>{{ message }}</p>
+      </div>
+    </div>
   </div>
 </template>
 

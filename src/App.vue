@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <Header v-if="!isLoginPage" />
+    <Header v-if="!isLoginPage && !isSignupPage" />
     <router-view></router-view>
   </div>
 </template>
@@ -12,6 +12,7 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const isLoginPage = computed(() => route.path === '/login')
+const isSignupPage = computed(() => route.path === '/signup')
 </script>
 
 <style>

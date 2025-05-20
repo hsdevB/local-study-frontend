@@ -7,7 +7,8 @@
           src="@/assets/logo.png"
           alt="Klose Logo"
           class="mb-4"
-          style="height: 180px;"
+          style="height: 180px; cursor: pointer;"
+          @click="goToMain"
         />
 
         <form @submit.prevent="handleLogin" class="text-start">
@@ -36,7 +37,7 @@
           </div>
 
           <div class="d-grid">
-            <button type="button" class="btn btn-secondary" @click="goToRegister">
+            <button type="button" class="btn btn-secondary" @click="goToSignup">
               회원가입
             </button>
           </div>
@@ -62,15 +63,19 @@ const handleLogin = () => {
   }
 }
 
-const goToRegister = () => {
-  router.push('/register')
+const goToSignup = () => {
+  router.push('/signup')
+}
+
+const goToMain = () => {
+  router.push('/')
 }
 </script>
 
 <style scoped>
 /* ✅ 전체 배경: 부드러운 오프화이트 */
 .login-container {
-  background-color: #fdfcfa;
+  background-color: #faf7f5;
 }
 
 /* ✅ 로그인 박스 배경: 로고 배경톤과 어울리는 아이보리 */
@@ -128,5 +133,13 @@ const goToRegister = () => {
 
 .btn-secondary:hover {
   background-color: #e3d8ce;
+}
+
+img {
+  transition: opacity 0.2s ease;
+}
+
+img:hover {
+  opacity: 0.8;
 }
 </style>
