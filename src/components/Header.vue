@@ -33,21 +33,25 @@ const router = useRouter()
 const searchInput = ref('')
 
 const goToHome = () => {
+  // 검색어 초기화
+  searchInput.value = ''
+  // 메인 페이지로 이동하면서 검색 파라미터 제거
   router.push('/')
+  // 리셋 이벤트 발생
+  emit('reset')
 }
 
 const handleSearch = () => {
   if (searchInput.value.trim()) {
-    // 현재 페이지가 메인 페이지가 아닌 경우 메인 페이지로 이동
-    if (router.currentRoute.value.path !== '/') {
-      router.push('/')
-    }
-    // 검색 이벤트 발생
-    emit('search', searchInput.value)
+    // 검색어를 URL 쿼리 파라미터로 전달
+    router.push({
+      path: '/',
+      query: { search: searchInput.value.trim() }
+    })
   }
 }
 
-const emit = defineEmits(['search'])
+const emit = defineEmits(['search', 'reset'])
 </script>
 
 <style scoped>

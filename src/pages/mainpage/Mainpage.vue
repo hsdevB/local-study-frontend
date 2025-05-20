@@ -97,9 +97,10 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const categories = ref([])
 const isLoggedIn = ref(true)
 const username = ref('')
@@ -110,14 +111,54 @@ const searchQuery = ref('')
 const selectedSido = ref('')
 const selectedSigungu = ref('')
 const selectedDong = ref('')
-const sidoList = ref(['서울특별시', '부산광역시', '인천광역시', /* ... */])
+const sidoList = ref(['서울특별시', '부산광역시', '인천광역시', '대구광역시', '대전광역시', '광주광역시', '울산광역시', '세종특별자치시', '경기도', '강원도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도'])
 const sigunguList = ref([])
 const dongList = ref([])
+
+// 지역 데이터 매핑
+const locationData = {
+  '서울특별시': {
+    '강남구': ['역삼동', '서초동', '청담동', '삼성동', '대치동', '신사동', '논현동', '압구정동'],
+    '서초구': ['서초동', '반포동', '잠원동', '우면동', '양재동'],
+    '송파구': ['잠실동', '문정동', '방이동', '송파동', '가락동'],
+    '마포구': ['홍대입구', '신촌', '합정동', '망원동', '상암동'],
+    '강서구': ['화곡동', '발산동', '가양동', '공항동', '오곡동']
+  },
+  '부산광역시': {
+    '해운대구': ['우동', '중동', '송정동', '반여동', '재송동'],
+    '남구': ['대연동', '용호동', '문현동', '우암동'],
+    '동래구': ['명륜동', '복천동', '칠산동', '낙민동']
+  },
+  '인천광역시': {
+    '남동구': ['구월동', '간석동', '만수동', '수산동'],
+    '연수구': ['송도동', '연수동', '옥련동', '동춘동']
+  }
+  // 다른 지역 데이터는 필요에 따라 추가
+}
 
 // 스터디 목록 관련 상태
 const studies = ref([])
 const currentPage = ref(1)
-const totalPages = ref(1)
+const totalPages = computed(() => {
+  if (!selectedCategory.value) return 1
+  
+  let filtered = studies.value.filter(study => 
+    study.categoryId === selectedCategory.value.id
+  )
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.trim()
+    if (query) {
+      filtered = filtered.filter(study => {
+        const titleSimilarity = calculateSimilarity(study.title, query)
+        const contentSimilarity = calculateSimilarity(study.content, query)
+        return Math.max(titleSimilarity, contentSimilarity) >= 0.3
+      })
+    }
+  }
+  
+  return Math.max(1, Math.ceil(filtered.length / itemsPerPage))
+})
 const itemsPerPage = 9 // 한 페이지당 9개 (3x3)
 
 // 검색어와 문자열의 유사도를 계산하는 함수
@@ -128,23 +169,85 @@ const calculateSimilarity = (str1, str2) => {
   // 완전 일치
   if (s1 === s2) return 1
   
-  // 부분 일치
-  if (s1.includes(s2) || s2.includes(s1)) return 0.8
+  // 부분 일치 (제목에서 검색어가 포함된 경우 더 높은 점수)
+  if (s1.includes(s2)) return 0.9
+  if (s2.includes(s1)) return 0.8
   
   // 단어 단위로 비교
   const words1 = s1.split(/\s+/)
   const words2 = s2.split(/\s+/)
   
   let matchCount = 0
+  let totalWords = Math.max(words1.length, words2.length)
+  
   for (const word1 of words1) {
     for (const word2 of words2) {
-      if (word1.includes(word2) || word2.includes(word1)) {
-        matchCount++
+      // 단어가 정확히 일치하는 경우
+      if (word1 === word2) {
+        matchCount += 1
+      } 
+      // 한 단어가 다른 단어에 포함되는 경우
+      else if (word1.includes(word2) || word2.includes(word1)) {
+        matchCount += 0.8
+      }
+      // 단어의 일부가 일치하는 경우 (최소 2글자 이상)
+      else if (word1.length > 1 && word2.length > 1) {
+        let commonChars = 0
+        for (let i = 0; i < Math.min(word1.length, word2.length); i++) {
+          if (word1[i] === word2[i]) commonChars++
+        }
+        if (commonChars >= 2) {
+          matchCount += 0.5 * (commonChars / Math.min(word1.length, word2.length))
+        }
       }
     }
   }
   
-  return matchCount / Math.max(words1.length, words2.length)
+  return matchCount / totalWords
+}
+
+// 검색어 처리 함수
+const handleSearch = (query) => {
+  console.log('Search query received:', query) // 디버깅용 로그
+  searchQuery.value = query
+  currentPage.value = 1 // 검색 시 첫 페이지로 이동
+}
+
+// 모든 필터 초기화
+const resetAllFilters = () => {
+  // 검색어 초기화
+  searchQuery.value = ''
+  // 지역 선택 초기화
+  resetLocation()
+  // 페이지 초기화
+  currentPage.value = 1
+}
+
+// URL 쿼리 파라미터 처리
+const processSearchQuery = () => {
+  const query = route.query.search
+  if (query) {
+    handleSearch(query)
+  } else {
+    // URL에 검색어가 없는 경우 모든 필터 초기화
+    resetAllFilters()
+  }
+}
+
+// 라우트 변경 감지
+watch(() => route.query.search, (newQuery) => {
+  if (newQuery) {
+    handleSearch(newQuery)
+  } else {
+    // 검색어가 제거된 경우 검색 초기화
+    searchQuery.value = ''
+    currentPage.value = 1
+  }
+})
+
+// 리셋 이벤트 처리
+const handleReset = () => {
+  resetAllFilters()
 }
 
 // 필터링된 스터디 목록
@@ -162,27 +265,58 @@ const filteredStudies = computed(() => {
       filtered = filtered.filter(study => {
         const titleSimilarity = calculateSimilarity(study.title, query)
         const contentSimilarity = calculateSimilarity(study.content, query)
-        return titleSimilarity > 0.5 || contentSimilarity > 0.5
+        
+        // 제목과 내용의 유사도 중 더 높은 값을 사용
+        const maxSimilarity = Math.max(titleSimilarity, contentSimilarity)
+        
+        // 유사도가 0.3 이상인 경우만 포함 (임계값 조정)
+        return maxSimilarity >= 0.3
+      }).sort((a, b) => {
+        // 유사도에 따라 정렬 (높은 순)
+        const similarityA = Math.max(
+          calculateSimilarity(a.title, query),
+          calculateSimilarity(a.content, query)
+        )
+        const similarityB = Math.max(
+          calculateSimilarity(b.title, query),
+          calculateSimilarity(b.content, query)
+        )
+        return similarityB - similarityA
       })
     }
+  }
+
+  // 지역 필터링
+  if (selectedSido.value) {
+    filtered = filtered.filter(study => {
+      // 스터디의 지역 정보가 선택된 시/도와 일치하는지 확인
+      const matchesSido = study.location?.sido === selectedSido.value
+      
+      // 시/군/구가 선택된 경우 추가 필터링
+      if (selectedSigungu.value) {
+        const matchesSigungu = study.location?.sigungu === selectedSigungu.value
+        
+        // 읍/면/동이 선택된 경우 추가 필터링
+        if (selectedDong.value) {
+          return matchesSido && matchesSigungu && study.location?.dong === selectedDong.value
+        }
+        
+        return matchesSido && matchesSigungu
+      }
+      
+      return matchesSido
+    })
+  }
+  
+  // 페이지 범위 보호
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = totalPages.value
   }
   
   const startIndex = (currentPage.value - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   
   return filtered.slice(startIndex, endIndex)
-})
-
-// 검색 처리 함수
-const handleSearch = (query) => {
-  console.log('Search query received:', query) // 디버깅용 로그
-  searchQuery.value = query
-  currentPage.value = 1
-}
-
-// 검색 함수를 전역으로 노출
-defineExpose({
-  handleSearch
 })
 
 // 카테고리 데이터 가져오기
@@ -209,8 +343,8 @@ const fetchCategories = async () => {
 // 카테고리 선택 처리
 const selectCategory = (category) => {
   selectedCategory.value = category
+  resetLocation() // 카테고리 변경 시 지역 선택 초기화
   console.log('선택된 카테고리:', category)
-  // TODO: 카테고리 선택 시 처리 로직 구현
 }
 
 // 로그아웃 처리
@@ -236,14 +370,14 @@ const checkLoginStatus = () => {
 const handleSidoChange = () => {
   selectedSigungu.value = ''
   selectedDong.value = ''
-  // TODO: 선택된 시/도에 따른 시/군/구 목록 가져오기
-  sigunguList.value = ['강남구', '서초구', '송파구', /* ... */]
+  sigunguList.value = selectedSido.value ? Object.keys(locationData[selectedSido.value] || {}) : []
 }
 
 const handleSigunguChange = () => {
   selectedDong.value = ''
-  // TODO: 선택된 시/군/구에 따른 읍/면/동 목록 가져오기
-  dongList.value = ['역삼동', '서초동', '잠실동', /* ... */]
+  dongList.value = selectedSido.value && selectedSigungu.value 
+    ? (locationData[selectedSido.value]?.[selectedSigungu.value] || [])
+    : []
 }
 
 // 스터디 목록 가져오기
@@ -256,111 +390,228 @@ const fetchStudies = async () => {
         id: 1,
         categoryId: 1,
         title: '프로그래밍 스터디',
-        content: '함께 프로그래밍을 배우고 실력을 향상시켜요! 함께 프로그래밍을 배우고 실력을 향상시켜요! 함께 프로그래밍을 배우고 실력을 향상시켜요!',
+        content: '함께 프로그래밍을 배우고 실력을 향상시켜요!함께 프로그래밍을 배우고 실력을 향상시켜요!함께 프로그래밍을 배우고 실력을 향상시켜요!함께 프로그래밍을 배우고 실력을 향상시켜요!함께 프로그래밍을 배우고 실력을 향상시켜요!함께 프로그래밍을 배우고 실력을 향상시켜요!',
         author: '홍길동',
         currentMembers: 3,
         maxMembers: 5,
-        thumbnail: 'https://via.placeholder.com/150'
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '서울특별시',
+          sigungu: '강남구',
+          dong: '역삼동'
+        }
       },
       {
         id: 2,
         categoryId: 1,
         title: '자격증도전반',
-        content: '가나다라마바사.',
+        content: '정보처리기사 자격증 취득을 위한 스터디입니다.',
         author: '김철수',
         currentMembers: 4,
         maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150'
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '서울특별시',
+          sigungu: '서초구',
+          dong: '서초동'
+        }
       },
       {
         id: 3,
         categoryId: 1,
         title: '웹 개발 스터디',
         content: '프론트엔드와 백엔드 개발을 함께 배워요.',
-        author: '김철수',
-        currentMembers: 4,
-        maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150'
+        author: '이영희',
+        currentMembers: 2,
+        maxMembers: 4,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '부산광역시',
+          sigungu: '해운대구',
+          dong: '우동'
+        }
       },
       {
         id: 4,
-        categoryId: 1,
-        title: '웹 개발 스터디',
-        content: '프론트엔드와 백엔드 개발을 함께 배워요.',
-        author: '김철수',
-        currentMembers: 4,
-        maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150'
+        categoryId: 2,
+        title: 'UI/UX 디자인 스터디',
+        content: '사용자 경험을 중심으로 한 디자인 학습',
+        author: '박지민',
+        currentMembers: 5,
+        maxMembers: 8,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '서울특별시',
+          sigungu: '마포구',
+          dong: '홍대입구'
+        }
       },
       {
         id: 5,
-        categoryId: 1,
-        title: '웹 개발 스터디',
-        content: '프론트엔드와 백엔드 개발을 함께 배워요.',
-        author: '김철수',
-        currentMembers: 4,
-        maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150'
+        categoryId: 2,
+        title: '그래픽 디자인 기초',
+        content: '포토샵과 일러스트레이터 기초부터 실전까지',
+        author: '최유진',
+        currentMembers: 3,
+        maxMembers: 5,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '인천광역시',
+          sigungu: '연수구',
+          dong: '송도동'
+        }
       },
       {
         id: 6,
-        categoryId: 1,
-        title: '웹 개발 스터디',
-        content: '프론트엔드와 백엔드 개발을 함께 배워요.',
-        author: '김철수',
+        categoryId: 3,
+        title: '디지털 마케팅 스터디',
+        content: 'SNS 마케팅과 콘텐츠 제작 실습',
+        author: '정다은',
         currentMembers: 4,
         maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150'
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '서울특별시',
+          sigungu: '강남구',
+          dong: '삼성동'
+        }
       },
       {
         id: 7,
-        categoryId: 1,
-        title: '웹 개발 스터디',
-        content: '프론트엔드와 백엔드 개발을 함께 배워요.',
-        author: '김철수',
-        currentMembers: 4,
-        maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150'
+        categoryId: 3,
+        title: '브랜드 마케팅 전략',
+        content: '브랜드 아이덴티티 구축과 마케팅 전략 수립',
+        author: '김민준',
+        currentMembers: 2,
+        maxMembers: 4,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '부산광역시',
+          sigungu: '남구',
+          dong: '대연동'
+        }
       },
       {
         id: 8,
-        categoryId: 1,
-        title: '웹 개발 스터디',
-        content: '프론트엔드와 백엔드 개발을 함께 배워요.',
-        author: '김철수',
-        currentMembers: 4,
-        maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150'
+        categoryId: 4,
+        title: '스타트업 창업 스터디',
+        content: '창업 아이템 발굴부터 비즈니스 모델 설계까지',
+        author: '이승우',
+        currentMembers: 6,
+        maxMembers: 8,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '서울특별시',
+          sigungu: '송파구',
+          dong: '잠실동'
+        }
       },
       {
         id: 9,
-        categoryId: 1,
-        title: '웹 개발 스터디',
-        content: '프론트엔드와 백엔드 개발을 함께 배워요.',
-        author: '김철수',
-        currentMembers: 4,
-        maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150'
+        categoryId: 4,
+        title: '재무관리 스터디',
+        content: '기업 재무제표 분석과 투자 전략',
+        author: '박서연',
+        currentMembers: 3,
+        maxMembers: 5,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '인천광역시',
+          sigungu: '남동구',
+          dong: '구월동'
+        }
       },
       {
         id: 10,
-        categoryId: 1,
-        title: '웹 개발 스터디',
-        content: '프론트엔드와 백엔드 개발을 함께 배워요.',
-        author: '김철수',
+        categoryId: 5,
+        title: '영어 회화 스터디',
+        content: '실전 영어 회화와 토론',
+        author: '최지원',
         currentMembers: 4,
         maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150'
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '서울특별시',
+          sigungu: '강서구',
+          dong: '화곡동'
+        }
       },
-      // ... 더 많은 스터디 데이터
+      {
+        id: 11,
+        categoryId: 5,
+        title: '일본어 JLPT 준비반',
+        content: 'JLPT N2 합격을 위한 스터디',
+        author: '김수진',
+        currentMembers: 5,
+        maxMembers: 7,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '부산광역시',
+          sigungu: '동래구',
+          dong: '명륜동'
+        }
+      },
+      {
+        id: 12,
+        categoryId: 1,
+        title: '알고리즘 스터디',
+        content: '코딩 테스트 대비 알고리즘 문제 풀이',
+        author: '이준호',
+        currentMembers: 3,
+        maxMembers: 5,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '서울특별시',
+          sigungu: '서초구',
+          dong: '반포동'
+        }
+      },
+      {
+        id: 13,
+        categoryId: 2,
+        title: '모션 그래픽 디자인',
+        content: '애프터이펙트를 활용한 모션 그래픽 제작',
+        author: '정민서',
+        currentMembers: 2,
+        maxMembers: 4,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '인천광역시',
+          sigungu: '연수구',
+          dong: '연수동'
+        }
+      },
+      {
+        id: 14,
+        categoryId: 3,
+        title: '콘텐츠 마케팅 스터디',
+        content: '유튜브 채널 운영과 콘텐츠 제작',
+        author: '박현우',
+        currentMembers: 4,
+        maxMembers: 6,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '서울특별시',
+          sigungu: '마포구',
+          dong: '상암동'
+        }
+      },
+      {
+        id: 15,
+        categoryId: 4,
+        title: '투자 분석 스터디',
+        content: '주식 투자와 포트폴리오 관리',
+        author: '김태영',
+        currentMembers: 5,
+        maxMembers: 7,
+        thumbnail: 'https://via.placeholder.com/150',
+        location: {
+          sido: '부산광역시',
+          sigungu: '해운대구',
+          dong: '중동'
+        }
+      }
     ]
-    
-    // 선택된 카테고리의 스터디 수에 따라 전체 페이지 수 계산
-    const categoryStudies = studies.value.filter(
-      study => study.categoryId === selectedCategory.value?.id
-    )
-    // 스터디가 없을 경우 1페이지로 설정
-    totalPages.value = Math.max(1, Math.ceil(categoryStudies.length / itemsPerPage))
   } catch (error) {
     console.error('스터디 목록 로딩 실패:', error)
   }
@@ -369,7 +620,7 @@ const fetchStudies = async () => {
 // 페이지 변경
 const changePage = (page) => {
   currentPage.value = page
-  fetchStudies()
+  // fetchStudies() 호출 제거 - 더 이상 필요하지 않음
 }
 
 // 스터디 상세 페이지로 이동
@@ -402,10 +653,26 @@ const handleStudyListScroll = (event) => {
   studyList.scrollTop += event.deltaY
 }
 
+// 지역 선택 초기화
+const resetLocation = () => {
+  selectedSido.value = ''
+  selectedSigungu.value = ''
+  selectedDong.value = ''
+  sigunguList.value = []
+  dongList.value = []
+}
+
 onMounted(() => {
   fetchCategories()
   checkLoginStatus()
   fetchStudies()
+  processSearchQuery() // URL 쿼리 파라미터 처리
+})
+
+// 컴포넌트 메서드 노출
+defineExpose({
+  handleSearch,
+  handleReset
 })
 </script>
 
@@ -582,6 +849,9 @@ onMounted(() => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .study-card:hover {
@@ -592,6 +862,7 @@ onMounted(() => {
   width: 100%;
   height: 200px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .study-thumbnail img {
@@ -604,7 +875,8 @@ onMounted(() => {
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  min-height: 120px;
+  flex: 1;
+  min-height: 150px;
   position: relative;
 }
 
@@ -613,6 +885,7 @@ onMounted(() => {
   font-size: 1.2rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
+  line-height: 1.4;
 }
 
 .study-content {
@@ -625,6 +898,7 @@ onMounted(() => {
   overflow: hidden;
   flex: 1;
   min-height: 2.7em;
+  line-height: 1.5;
 }
 
 .study-meta {
@@ -637,6 +911,8 @@ onMounted(() => {
   bottom: 1rem;
   left: 1rem;
   right: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee5dd;
 }
 
 .pagination {

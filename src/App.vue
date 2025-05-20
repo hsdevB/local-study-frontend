@@ -3,6 +3,7 @@
     <Header 
       v-if="!isLoginPage && !isSignupPage && !isFindPasswordPage" 
       @search="handleHeaderSearch"
+      @reset="handleHeaderReset"
     />
     <router-view v-slot="{ Component }">
       <component :is="Component" ref="currentComponent" />
@@ -27,6 +28,15 @@ const handleHeaderSearch = (query) => {
   if (route.path === '/') {
     if (currentComponent.value?.handleSearch) {
       currentComponent.value.handleSearch(query)
+    }
+  }
+}
+
+const handleHeaderReset = () => {
+  // 현재 라우트가 메인 페이지인 경우에만 리셋 실행
+  if (route.path === '/') {
+    if (currentComponent.value?.handleReset) {
+      currentComponent.value.handleReset()
     }
   }
 }
