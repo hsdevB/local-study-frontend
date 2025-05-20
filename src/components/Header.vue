@@ -1,108 +1,85 @@
 <template>
-    <header class="navbar shadow-sm fixed-top px-4 d-flex justify-content-between align-items-center" style="height: 60px; background-color: #fbf9f8;">
-      <!-- 로고 -->
-      <div class="logo-container" @click="goToMain" style="cursor: pointer;">
-        <img
-          src="@/assets/logo.png"
-          alt="Logo"
-          style="height: 50px; width: 90px;"
-        />
-      </div>
-  
-      <!-- 오른쪽 영역: 검색창과 버튼들 -->
-      <div class="d-flex align-items-center">
+  <header class="header">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid">
+        <!-- 로고 -->
+        <div class="navbar-brand" @click="goToHome">
+          <img src="@/assets/logo-small.png" alt="Klose Logo" style="height: 50px; width: 120px;" />
+        </div>
+
         <!-- 검색창 -->
-        <form class="d-flex me-3" @submit.prevent="onSearch" style="width: 300px;">
+        <form class="d-flex" role="search">
           <input
-            type="text"
             class="form-control me-2"
-            placeholder="검색어 입력"
-            v-model="query"
-            style="border-radius: 10px; border: 1px solid #ddd;"
+            type="search"
+            placeholder="검색어를 입력하세요"
+            aria-label="Search"
           />
-          <button class="btn" type="submit" style="background-color: #d4c4b7; color: #4b3621; border-radius: 10px; min-width: 80px;">
+          <button class="btn btn-outline-secondary" type="submit">
             검색
           </button>
         </form>
-
-        <!-- 로그인 버튼 -->
-        <button 
-          class="btn me-2" 
-          @click="goToLogin"
-          style="background-color: #6f4e37; color: white; font-weight: 600; border-radius: 10px; border: none; min-width: 80px;"
-        >
-          로그인
-        </button>
-
-        <!-- 회원가입 버튼 -->
-        <button 
-          class="btn" 
-          @click="goToSignup"
-          style="background-color: #eee5dd; color: #4b3621; font-weight: 600; border-radius: 10px; border: none; min-width: 80px;"
-        >
-          회원가입
-        </button>
       </div>
-    </header>
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue'
-  import { useRouter } from 'vue-router'
-  
-  const router = useRouter()
-  const query = ref('')
-  
-  const onSearch = () => {
-    alert(`검색: ${query.value}`)
-  }
+    </nav>
+  </header>
+</template>
 
-  const goToLogin = () => {
-    router.push('/login')
-  }
+<script setup>
+import { useRouter } from 'vue-router'
 
-  const goToSignup = () => {
-    router.push('/signup')
-  }
+const router = useRouter()
 
-  const goToMain = () => {
-    router.push('/')
-  }
-  </script>
-  
-  <style scoped>
-  /* 전체 너비 고정 헤더가 아래 콘텐츠 가리지 않게 여백 확보 */
-  body, html {
-    margin: 0;
-    padding: 0;
-  }
-  
-  header {
-    width: 100%;
-    z-index: 1000;
-  }
+const goToHome = () => {
+  router.push('/')
+}
+</script>
 
-  .btn:hover {
-    opacity: 0.9;
-  }
+<style scoped>
+.header {
+  background-color: #fbf9f8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
 
-  .form-control:focus {
-    border-color: #6f4e37;
-    box-shadow: 0 0 0 0.2rem rgba(111, 78, 55, 0.25);
-  }
+.navbar {
+  padding: 0.25rem 1rem;
+}
 
-  .logo-container {
-    transition: opacity 0.2s ease;
-  }
+.navbar-brand {
+  padding: 0 0 0 20px;
+  cursor: pointer;
+}
 
-  .logo-container:hover {
-    opacity: 0.8;
-  }
+.navbar-brand img {
+  display: block;
+}
 
-  @media (max-width: 992px) {
-    form {
-      width: 200px !important;
-    }
-  }
-  </style>
+.form-control {
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  padding: 0.5rem 1rem;
+  width: 300px;
+}
+
+.form-control:focus {
+  border-color: #6f4e37;
+  box-shadow: 0 0 0 0.2rem rgba(111, 78, 55, 0.25);
+}
+
+.btn-outline-secondary {
+  border-color: #6f4e37;
+  color: #6f4e37;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6f4e37;
+  border-color: #6f4e37;
+  color: white;
+}
+</style>
   

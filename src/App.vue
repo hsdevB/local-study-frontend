@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <Header v-if="!isLoginPage && !isSignupPage" />
+    <Header v-if="!isLoginPage && !isSignupPage && !isFindPasswordPage" />
     <router-view></router-view>
   </div>
 </template>
@@ -13,6 +13,7 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 const isLoginPage = computed(() => route.path === '/login')
 const isSignupPage = computed(() => route.path === '/signup')
+const isFindPasswordPage = computed(() => route.path === '/find-password')
 </script>
 
 <style>

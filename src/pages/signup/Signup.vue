@@ -4,10 +4,10 @@
         <div class="card-body text-center">
           <!-- 로고 이미지 -->
           <img
-            src="@/assets/logo.png"
+            src="@/assets/logo-small.png"
             alt="Klose Logo"
-            class="mb-4"
-            style="height: 180px; cursor: pointer;"
+            class="mb-3"
+            style="height: 90px; cursor: pointer;"
             @click="goToMain"
           />
   
@@ -108,27 +108,19 @@
             <!-- 성별 -->
             <div class="mb-3">
               <label class="form-label d-block">성별</label>
-              <div>
-                <div class="form-check form-check-inline">
+              <div class="gender-toggle">
+                <div class="form-check">
                   <input
-                    id="genderMale"
                     class="form-check-input"
-                    type="radio"
-                    value="남"
-                    v-model="gender"
-                    required
+                    type="checkbox"
+                    id="genderToggle"
+                    :checked="gender === '여'"
+                    @change="toggleGender"
                   />
-                  <label class="form-check-label" for="genderMale">남</label>
-                </div>
-                <div class="form-check form-check-inline">
-                  <input
-                    id="genderFemale"
-                    class="form-check-input"
-                    type="radio"
-                    value="여"
-                    v-model="gender"
-                  />
-                  <label class="form-check-label" for="genderFemale">여</label>
+                  <label class="form-check-label" for="genderToggle">
+                    <span class="gender-text" :class="{ 'active': gender === '남' }">남</span>
+                    <span class="gender-text" :class="{ 'active': gender === '여' }">여</span>
+                  </label>
                 </div>
               </div>
             </div>
@@ -185,7 +177,7 @@
   const passwordConfirm = ref('')
   const email = ref('')
   const birthDate = ref('')
-  const gender = ref('')
+  const gender = ref('남')
   const phone = ref('')
   const nickname = ref('')
   
@@ -238,6 +230,10 @@
   const goToMain = () => {
     router.push('/')
   }
+
+  const toggleGender = (event) => {
+    gender.value = event.target.checked ? '여' : '남'
+  }
   </script>
   
   <style scoped>
@@ -277,11 +273,17 @@
     padding: 0.75rem;
     font-size: 0.9rem;
     border: 1px solid #ddd;
+    color: #6f4e37;
   }
   
   .form-control:focus {
     border-color: #6f4e37;
     box-shadow: 0 0 0 0.2rem rgba(111, 78, 55, 0.25);
+  }
+  
+  .form-control::placeholder {
+    color: #6c757d;
+    opacity: 1;
   }
   
   /* 버튼 스타일: 로그인 페이지와 동일 */
@@ -332,6 +334,7 @@
     position: relative;
     padding-right: 2rem;
     letter-spacing: -0.5px;
+    color: #6c757d;
   }
 
   input[type="date"]::-webkit-calendar-picker-indicator {
@@ -341,18 +344,22 @@
     transform: translateY(-50%);
     cursor: pointer;
     padding: 0.5rem;
+    filter: invert(0.4) sepia(0.1) saturate(0.1) hue-rotate(0deg) brightness(0.9);
   }
 
   input[type="date"]::-webkit-datetime-edit {
     padding: 0;
+    color: #6c757d;
   }
 
   input[type="date"]::-webkit-datetime-edit-fields-wrapper {
     padding: 0;
+    color: #6c757d;
   }
 
   input[type="date"]::-webkit-datetime-edit-text {
     padding: 0 0.1rem;
+    color: #6c757d;
   }
 
   input[type="date"]::-webkit-datetime-edit-year-field,
@@ -360,6 +367,12 @@
   input[type="date"]::-webkit-datetime-edit-day-field {
     padding: 0 0.1rem;
     letter-spacing: -0.5px;
+    color: #6c757d;
+  }
+
+  input[type="date"]::placeholder {
+    color: #6c757d;
+    opacity: 1;
   }
 
   /* 입력 그룹 스타일 */
@@ -372,7 +385,7 @@
 
   .input-group .btn {
     border-radius: 10px;
-    border-left: 1px solid #6f4e37;
+    border: 1px solid #ddd;
     margin-left: -1px;
   }
 
@@ -406,6 +419,72 @@
 
   img:hover {
     opacity: 0.8;
+  }
+
+  /* 성별 토글 스타일 */
+  .gender-toggle {
+    margin: 0.5rem 0;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .gender-toggle .form-check {
+    position: relative;
+    padding: 0;
+  }
+
+  .gender-toggle .form-check-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .gender-toggle .form-check-label {
+    display: flex;
+    align-items: center;
+    background-color: #f5f0eb;
+    border-radius: 8px;
+    padding: 4px;
+    cursor: pointer;
+    position: relative;
+    width: 120px;
+    height: 40px;
+    border: 1px solid #e3d8ce;
+  }
+
+  .gender-toggle .gender-text {
+    flex: 1;
+    text-align: center;
+    font-weight: 600;
+    color: #6f4e37;
+    transition: all 0.3s ease;
+    z-index: 1;
+    font-size: 1rem;
+  }
+
+  .gender-toggle .gender-text.active {
+    color: white;
+    font-weight: 700;
+  }
+
+  .gender-toggle .form-check-label::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    width: 56px;
+    height: 32px;
+    background-color: #8b6b4a;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+  }
+
+  .gender-toggle .form-check-input:checked + .form-check-label::before {
+    left: 60px;
+  }
+
+  .gender-toggle .form-check-label:hover {
+    background-color: #f0e9e3;
   }
   </style>
   

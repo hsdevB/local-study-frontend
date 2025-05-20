@@ -4,10 +4,10 @@
       <div class="card-body text-center">
         <!-- 로고 이미지 -->
         <img
-          src="@/assets/logo.png"
+          src="@/assets/logo-small.png"
           alt="Klose Logo"
           class="mb-4"
-          style="height: 180px; cursor: pointer;"
+          style="height: 90px; cursor: pointer;"
           @click="goToMain"
         />
 
@@ -33,13 +33,12 @@
           </div>
 
           <div class="d-grid mb-3">
-            <button type="submit" class="btn btn-primary">로그인</button>
+            <button type="submit" class="btn btn-primary w-100 mb-3">로그인</button>
           </div>
 
-          <div class="d-grid">
-            <button type="button" class="btn btn-secondary" @click="goToSignup">
-              회원가입
-            </button>
+          <div class="d-flex justify-content-between align-items-center">
+            <router-link to="/signup" class="text-decoration-none">회원가입</router-link>
+            <router-link to="/find-password" class="text-decoration-none">비밀번호 찾기</router-link>
           </div>
         </form>
       </div>
@@ -141,5 +140,15 @@ img {
 
 img:hover {
   opacity: 0.8;
+}
+
+.text-decoration-none {
+  color: #6f4e37;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.text-decoration-none:hover {
+  color: #4b3621;
 }
 </style>
