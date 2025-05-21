@@ -43,10 +43,18 @@ const handleHeaderReset = () => {
 </script>
 
 <style>
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #faf7f5;
+  min-height: 100vh;
+}
+
 .app-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: #faf7f5;
 }
 
 /* router-view가 있는 영역이 남은 공간을 모두 차지하도록 설정 */

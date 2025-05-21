@@ -1,0 +1,184 @@
+.signup-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #faf7f5;
+  padding: 1rem;
+}
+
+.signup-card {
+  width: 100%;
+  max-width: 420px;
+  background-color: #fbf9f8;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.signup-content {
+  padding: 2rem;
+}
+
+.logo-container {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+}
+
+.logo {
+  height: 90px;
+  transition: opacity 0.2s ease;
+}
+
+.logo:hover {
+  opacity: 0.8;
+}
+
+.signup-title {
+  color: #4b3621;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  margin-bottom: 0.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #4b3621;
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus {
+  border-color: #6f4e37;
+  box-shadow: 0 0 0 0.2rem rgba(111, 78, 55, 0.15);
+}
+
+.form-control.is-invalid {
+  border-color: #dc3545;
+}
+
+.invalid-feedback {
+  font-size: 0.8rem;
+  color: #dc3545;
+  margin-top: 0.25rem;
+}
+
+.gender-options {
+  position: relative;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  background-color: #eee5dd;
+  border-radius: 6px;
+  padding: 2px;
+  width: fit-content;
+  display: flex;
+}
+
+.gender-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  height: calc(100% - 4px);
+  background-color: #6f4e37;
+  border-radius: 4px;
+  transition: transform 0.3s ease;
+}
+
+.gender-option {
+  position: relative;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.gender-radio {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.gender-label {
+  display: inline-block;
+  padding: 0.25rem 1.25rem;
+  color: #4b3621;
+  font-weight: 400;
+  transition: color 0.3s ease;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.gender-radio:checked + .gender-label {
+  color: white;
+}
+
+.gender-radio:not(:checked) + .gender-label:hover {
+  color: #6f4e37;
+}
+
+.signup-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #6f4e37;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.signup-button:hover:not(:disabled) {
+  background-color: #5a3f2e;
+}
+
+.signup-button:disabled {
+  background-color: #a67c52;
+  cursor: not-allowed;
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.login-link a {
+  color: #6f4e37;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.login-link a:hover {
+  color: #4b3621;
+}
+
+@media (max-width: 480px) {
+  .signup-content {
+    padding: 1.5rem;
+  }
+
+  .logo {
+    height: 70px;
+  }
+} 

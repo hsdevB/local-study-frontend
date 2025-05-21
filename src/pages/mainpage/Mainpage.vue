@@ -38,21 +38,23 @@
       <!-- 상단 영역 -->
       <div class="content-header">
         <h2 class="category-title">{{ selectedCategory?.name }} 스터디</h2>
-        <div class="location-selector">
-          <select v-model="selectedSido" class="form-select" @change="handleSidoChange">
-            <option value="">시/도 선택</option>
-            <option v-for="sido in sidoList" :key="sido" :value="sido">{{ sido }}</option>
-          </select>
-          <h3 style="color: #6f4e37; font-size: 1rem; text-align: center; margin-top: 1px; margin-left: 4px;"> > </h3>
-          <select v-model="selectedSigungu" class="form-select" @change="handleSigunguChange" :disabled="!selectedSido">
-            <option value="">시/군/구 선택</option>
-            <option v-for="sigungu in sigunguList" :key="sigungu" :value="sigungu">{{ sigungu }}</option>
-          </select>
-          <h3 style="color: #6f4e37; font-size: 1rem; text-align: center; margin-top: 1px; margin-left: 4px;"> > </h3>
-          <select v-model="selectedDong" class="form-select" :disabled="!selectedSigungu">
-            <option value="">읍/면/동 선택</option>
-            <option v-for="dong in dongList" :key="dong" :value="dong">{{ dong }}</option>
-          </select>
+        <div class="header-actions">
+          <div class="location-selector">
+            <select v-model="selectedSido" class="form-select" @change="handleSidoChange">
+              <option value="">시/도 선택</option>
+              <option v-for="sido in sidoList" :key="sido" :value="sido">{{ sido }}</option>
+            </select>
+            <h3 style="color: #6f4e37; font-size: 1rem; text-align: center; margin-top: 1px; margin-left: 4px;"> > </h3>
+            <select v-model="selectedSigungu" class="form-select" @change="handleSigunguChange" :disabled="!selectedSido">
+              <option value="">시/군/구 선택</option>
+              <option v-for="sigungu in sigunguList" :key="sigungu" :value="sigungu">{{ sigungu }}</option>
+            </select>
+            <h3 style="color: #6f4e37; font-size: 1rem; text-align: center; margin-top: 1px; margin-left: 4px;"> > </h3>
+            <select v-model="selectedDong" class="form-select" :disabled="!selectedSigungu">
+              <option value="">읍/면/동 선택</option>
+              <option v-for="dong in dongList" :key="dong" :value="dong">{{ dong }}</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -71,6 +73,16 @@
             </div>
           </div>
         </div>
+
+        <!-- 플로팅 스터디 만들기 버튼 -->
+        <button 
+          v-if="isLoggedIn" 
+          class="floating-create-btn" 
+          @click="goToCreateStudy"
+          title="새 스터디 만들기"
+        >
+          <span class="btn-text">+</span>
+        </button>
       </div>
 
       <!-- 페이지네이션 -->
@@ -248,6 +260,16 @@ watch(() => route.query.search, (newQuery) => {
 // 리셋 이벤트 처리
 const handleReset = () => {
   resetAllFilters()
+}
+
+// 스터디 만들기 페이지로 이동
+const goToCreateStudy = () => {
+  if (!isLoggedIn.value) {
+    alert('로그인이 필요한 서비스입니다.')
+    router.push('/login')
+    return
+  }
+  router.push('/create-study')
 }
 
 // 필터링된 스터디 목록
@@ -796,6 +818,12 @@ defineExpose({
   margin: 0;
 }
 
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .location-selector {
   display: flex;
   gap: 0.5rem;
@@ -956,5 +984,94 @@ h3 {
 .page-info {
   color: #4b3621;
   font-weight: 500;
+}
+
+.create-study-section {
+  margin-bottom: 2rem;
+  padding: 0 0.5rem;
+}
+
+.create-study-btn {
+  width: 100%;
+  padding: 0.875rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #6f4e37;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(111, 78, 55, 0.15);
+}
+
+.create-study-btn:hover {
+  background-color: #8b6b4a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(111, 78, 55, 0.2);
+}
+
+.create-study-btn i {
+  font-size: 0.9rem;
+}
+
+.categories {
+  margin-top: 0;
+}
+
+/* 플로팅 버튼 스타일 */
+.floating-create-btn {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border: none;
+  border-radius: 50%;
+  background-color: #6f4e37;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(111, 78, 55, 0.2);
+  z-index: 1000;
+  font-size: 1.75rem;
+  font-weight: 500;
+  margin: 1rem auto;
+}
+
+.floating-create-btn .btn-text {
+  font-size: 2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-create-btn:hover {
+  background-color: #8b6b4a;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 16px rgba(111, 78, 55, 0.3);
+}
+
+.floating-create-btn:active {
+  transform: translateY(0) scale(0.95);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .floating-create-btn {
+    width: 56px;
+    height: 56px;
+    font-size: 1.5rem;
+  }
+
+  .floating-create-btn .btn-text {
+    font-size: 1.75rem;
+  }
 }
 </style>
