@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <Header 
-      v-if="!isLoginPage && !isSignupPage && !isFindPasswordPage" 
+      v-if="!isLoginPage && !isSignupPage && !isFindPasswordPage && !isMypagePage" 
       @search="handleHeaderSearch"
       @reset="handleHeaderReset"
     />
@@ -22,7 +22,7 @@ const currentComponent = ref(null)
 const isLoginPage = computed(() => route.path === '/login')
 const isSignupPage = computed(() => route.path === '/signup')
 const isFindPasswordPage = computed(() => route.path === '/find-password')
-
+const isMypagePage = computed(() => route.path === '/mypage')
 const handleHeaderSearch = (query) => {
   // 현재 라우트가 메인 페이지인 경우에만 검색 실행
   if (route.path === '/') {

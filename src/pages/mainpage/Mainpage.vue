@@ -43,12 +43,12 @@
             <option value="">시/도 선택</option>
             <option v-for="sido in sidoList" :key="sido" :value="sido">{{ sido }}</option>
           </select>
-          <h3 style="color: #6f4e37; font-size: 1.5rem; text-align: center; margin-top: 10px;"> > </h3>
+          <h3 style="color: #6f4e37; font-size: 1rem; text-align: center; margin-top: 1px; margin-left: 4px;"> > </h3>
           <select v-model="selectedSigungu" class="form-select" @change="handleSigunguChange" :disabled="!selectedSido">
             <option value="">시/군/구 선택</option>
             <option v-for="sigungu in sigunguList" :key="sigungu" :value="sigungu">{{ sigungu }}</option>
           </select>
-          <h3 style="color: #6f4e37; font-size: 1.5rem; text-align: center; margin-top: 10px;"> > </h3>
+          <h3 style="color: #6f4e37; font-size: 1rem; text-align: center; margin-top: 1px; margin-left: 4px;"> > </h3>
           <select v-model="selectedDong" class="form-select" :disabled="!selectedSigungu">
             <option value="">읍/면/동 선택</option>
             <option v-for="dong in dongList" :key="dong" :value="dong">{{ dong }}</option>
@@ -308,15 +308,17 @@ const filteredStudies = computed(() => {
     })
   }
   
-  // 페이지 범위 보호
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value
-  }
-  
   const startIndex = (currentPage.value - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   
   return filtered.slice(startIndex, endIndex)
+})
+
+// 페이지 범위 보호를 위한 watch 추가
+watch([currentPage, totalPages], ([newPage, total]) => {
+  if (newPage > total) {
+    currentPage.value = total
+  }
 })
 
 // 카테고리 데이터 가져오기
@@ -796,21 +798,29 @@ defineExpose({
 
 .location-selector {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .form-select {
-  padding: 0.5rem;
-  border-radius: 8px;
+  padding: 0.4rem;
+  border-radius: 6px;
   border: 1px solid #ddd;
   color: #4b3621;
   background-color: white;
-  min-width: 120px;
+  min-width: 110px;
+  font-size: 0.8rem;
 }
 
 .form-select:focus {
   border-color: #6f4e37;
   box-shadow: 0 0 0 0.2rem rgba(111, 78, 55, 0.25);
+}
+
+h3 {
+  color: #6f4e37;
+  font-size: 1.2rem;
+  margin: 0;
 }
 
 .study-list {
