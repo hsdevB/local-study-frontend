@@ -246,6 +246,17 @@ const processSearchQuery = () => {
   }
 }
 
+// 카테고리 쿼리 파라미터 처리
+const processCategoryQuery = () => {
+  const categoryId = route.query.category
+  if (categoryId) {
+    const category = categories.value.find(cat => cat.id === Number(categoryId))
+    if (category) {
+      selectedCategory.value = category
+    }
+  }
+}
+
 // 라우트 변경 감지
 watch(() => route.query.search, (newQuery) => {
   if (newQuery) {
@@ -254,6 +265,17 @@ watch(() => route.query.search, (newQuery) => {
     // 검색어가 제거된 경우 검색 초기화
     searchQuery.value = ''
     currentPage.value = 1
+  }
+})
+
+watch(() => route.query.category, (newCategoryId) => {
+  if (newCategoryId) {
+    const category = categories.value.find(cat => cat.id === Number(newCategoryId))
+    if (category) {
+      selectedCategory.value = category
+    }
+  } else {
+    selectedCategory.value = null
   }
 })
 
@@ -690,7 +712,8 @@ onMounted(() => {
   fetchCategories()
   checkLoginStatus()
   fetchStudies()
-  processSearchQuery() // URL 쿼리 파라미터 처리
+  processSearchQuery()
+  processCategoryQuery() // 카테고리 쿼리 파라미터 처리 추가
 })
 
 // 컴포넌트 메서드 노출

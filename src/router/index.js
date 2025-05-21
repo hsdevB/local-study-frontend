@@ -5,6 +5,7 @@ import Signup from '@/pages/signup/Signup.vue'
 import FindPassword from '@/pages/login/FindPassword.vue'
 import Mypage from '@/pages/mypage/Mypage.vue'
 import CreateStudy from '@/pages/create-study/CreateStudy.vue'
+import StudyDetail from '@/pages/study/StudyDetail.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -40,6 +41,11 @@ const router = createRouter({
       name: 'create-study',
       component: CreateStudy,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/study/:id',
+      name: 'study-detail',
+      component: StudyDetail
     }
   ]
 })
