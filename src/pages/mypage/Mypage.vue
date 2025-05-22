@@ -4,44 +4,58 @@
     <div class="mypage-container">
       <!-- 사이드바 -->
       <aside class="sidebar">
-        <div class="sidebar-content">
-          <div class="user-profile">
-            <div class="profile-badge">
-              <router-link to="/mypage?tab=profile" class="username-link">
-                <h3 class="username">{{ username }} 님</h3>
-              </router-link>
-            </div>
-            <div class="user-stats">
-              <router-link to="/mypage?tab=applied" class="stat-item">
-                <span class="stat-value">{{ appliedStudies.length }}</span>
-                <span class="stat-label">신청 스터디</span>
-              </router-link>
-              <router-link to="/mypage?tab=created" class="stat-item">
-                <span class="stat-value">{{ createdStudies.length }}</span>
-                <span class="stat-label">운영 스터디</span>
-              </router-link>
-            </div>
-          </div>
-          
-          <div class="menu-list">
-            <a href="#" class="menu-item" :class="{ active: activeMenu === 'applied' }" @click.prevent="activeMenu = 'applied'">
-              신청한 스터디
-            </a>
-            <a href="#" class="menu-item" :class="{ active: activeMenu === 'created' }" @click.prevent="activeMenu = 'created'">
-              내가 만든 스터디
-            </a>
-            <a href="#" class="menu-item" :class="{ active: activeMenu === 'profile' }" @click.prevent="activeMenu = 'profile'">
-              내 정보 수정
-            </a>
-          </div>
+        <!-- 카테고리 목록 -->
+        <div class="categories">
+          <h5 class="sidebar-title">마이 페이지</h5>
+          <ul class="category-list">
+            <li class="category-item" :class="{ 'selected': activeMenu === 'applied' }">
+              <a href="#" @click.prevent="activeMenu = 'applied'">신청한 스터디</a>
+            </li>
+            <li class="category-item" :class="{ 'selected': activeMenu === 'created' }">
+              <a href="#" @click.prevent="activeMenu = 'created'">내가 만든 스터디</a>
+            </li>
+            <li class="category-item" :class="{ 'selected': activeMenu === 'profile' }">
+              <a href="#" @click.prevent="activeMenu = 'profile'">내 정보 수정</a>
+            </li>
+          </ul>
         </div>
 
-        <!-- 뒤로가기 버튼 -->
-        <div class="back-button-container">
-          <button class="back-button" @click="goBack">
-            <i class="fas fa-arrow-left"></i>
-            뒤로가기
-          </button>
+        <!-- 사용자 메뉴 -->
+        <div class="user-menu">
+          <template v-if="!isLoggedIn">
+            <div class="user-profile">
+              <div class="user-actions no-border">
+                <router-link to="/login" class="menu-item">로그인</router-link>
+                <router-link to="/signup" class="menu-item signup">회원가입</router-link>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- 사용자 프로필 -->
+        <div v-if="isLoggedIn" class="user-profile">
+          <div class="profile-badge">
+            <router-link to="/mypage?tab=profile" class="username-link">
+              <h3 class="username">{{ username }} 님</h3>
+            </router-link>
+          </div>
+          <div class="user-stats">
+            <router-link to="/mypage?tab=applied" class="stat-item">
+              <span class="stat-value">{{ appliedStudies.length }}</span>
+              <span class="stat-label">신청 스터디</span>
+            </router-link>
+            <router-link to="/mypage?tab=created" class="stat-item">
+              <span class="stat-value">{{ createdStudies.length }}</span>
+              <span class="stat-label">운영 스터디</span>
+            </router-link>
+          </div>
+          <div class="user-actions">
+            <button class="menu-item" @click="goBack">
+              <i class="fas fa-arrow-left"></i>
+              뒤로가기
+            </button>
+            <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
+          </div>
         </div>
       </aside>
 
@@ -49,22 +63,26 @@
       <main class="main-content">
         <!-- 내 정보 수정 -->
         <div v-if="activeMenu === 'profile'" class="content-section">
-          <h2 class="section-title">내 정보 수정</h2>
-          <form @submit.prevent="updateProfile" class="profile-form">
-            <div class="form-group">
-              <label for="nickname">닉네임</label>
-              <input type="text" id="nickname" v-model="profile.nickname" class="form-control">
-            </div>
-            <div class="form-group">
-              <label for="email">이메일</label>
-              <input type="email" id="email" v-model="profile.email" class="form-control">
-            </div>
-            <div class="form-group">
-              <label for="phone">전화번호</label>
-              <input type="tel" id="phone" v-model="profile.phone" class="form-control">
-            </div>
-            <button type="submit" class="btn btn-primary">정보 수정</button>
-          </form>
+          <div class="content-header">
+            <h2 class="section-title">내 정보 수정</h2>
+          </div>
+          <div class="profile-form-container">
+            <form @submit.prevent="updateProfile" class="profile-form">
+              <div class="form-group">
+                <label for="nickname">닉네임</label>
+                <input type="text" id="nickname" v-model="profile.nickname" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="email">이메일</label>
+                <input type="email" id="email" v-model="profile.email" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="phone">전화번호</label>
+                <input type="tel" id="phone" v-model="profile.phone" class="form-control">
+              </div>
+              <button type="submit" class="btn btn-primary">정보 수정</button>
+            </form>
+          </div>
         </div>
 
         <!-- 내가 만든 스터디 -->
@@ -187,6 +205,7 @@ const router = useRouter()
 const route = useRoute()
 const activeMenu = ref('applied')
 const username = ref('홍길동') // TODO: 실제 사용자 이름으로 대체
+const isLoggedIn = ref(true)
 
 // URL의 tab 파라미터에 따라 메뉴 활성화
 watch(() => route.query.tab, (newTab) => {
@@ -250,6 +269,12 @@ const goToStudyDetail = (studyId) => {
 // 뒤로가기 함수
 const goBack = () => {
   router.back()
+}
+
+// 로그아웃 함수
+const logout = () => {
+  // TODO: 로그아웃 로직 구현
+  alert('로그아웃되었습니다.')
 }
 
 // 초기 데이터 로드
@@ -342,22 +367,61 @@ onMounted(() => {
   border-right: 1px solid #eee5dd;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   min-height: calc(100vh - 60px);
 }
 
-.sidebar-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.sidebar-title {
+  color: #6f4e37;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #eee5dd;
+  text-align: center;
+}
+
+.category-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+}
+
+.category-item {
+  margin-bottom: 0.5rem;
+}
+
+.category-item a {
+  display: block;
+  padding: 0.5rem;
+  color: #4b3621;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.category-item a:hover {
+  background-color: #eee5dd;
+  color: #6f4e37;
+}
+
+.category-item.selected a {
+  background-color: #eee5dd;
+  color: #6f4e37;
+  font-weight: 600;
+}
+
+.user-menu {
+  margin-bottom: 2rem;
 }
 
 .user-profile {
   text-align: center;
-  margin-bottom: 2rem;
   padding: 1.5rem;
   background-color: #f5f2ef;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-top: auto;
 }
 
 .profile-badge {
@@ -400,6 +464,7 @@ onMounted(() => {
   justify-content: space-around;
   padding-top: 1rem;
   border-top: 1px solid rgba(111, 78, 55, 0.1);
+  margin-bottom: 1.5rem;
 }
 
 .stat-item {
@@ -430,34 +495,63 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
-.menu-list {
+.user-actions {
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(111, 78, 55, 0.1);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.menu-item {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  color: #4b3621;
-  text-decoration: none;
+.user-actions.no-border {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.user-actions .menu-item {
+  width: 100%;
+  text-align: center;
+  padding: 0.75rem;
   border-radius: 8px;
   transition: all 0.2s ease;
-  margin-bottom: 0.5rem;
-}
-
-.menu-item:hover {
   background-color: #eee5dd;
   color: #6f4e37;
-  transform: translateX(5px);
+  text-decoration: none;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.menu-item.active {
-  background-color: #eee5dd;
-  color: #6f4e37;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(111, 78, 55, 0.1);
+.user-actions .menu-item:hover {
+  transform: translateY(-2px);
+  background-color: #e3d8ce;
+}
+
+.user-actions .menu-item.logout {
+  background-color: #6f4e37;
+  color: white;
+}
+
+.user-actions .menu-item.logout:hover {
+  background-color: #8b6b4a;
+}
+
+.user-actions .menu-item.signup {
+  background-color: #6f4e37;
+  color: white;
+}
+
+.user-actions .menu-item.signup:hover {
+  background-color: #8b6b4a;
+}
+
+.user-actions .menu-item i {
+  font-size: 0.9rem;
 }
 
 .main-content {
@@ -515,6 +609,10 @@ onMounted(() => {
   color: white;
   border-color: #6f4e37;
   box-shadow: 0 2px 4px rgba(111, 78, 55, 0.2);
+}
+
+.profile-form-container {
+  margin-top: 0;  /* Remove the top margin since we're using content-header's margin-bottom */
 }
 
 .profile-form {
@@ -699,39 +797,6 @@ onMounted(() => {
 .study-status.거절 {
   background-color: #ffebee;
   color: #c62828;
-}
-
-.back-button-container {
-  padding: 1rem;
-  border-top: 1px solid #eee5dd;
-  margin-top: auto;
-}
-
-.back-button {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: #f5f2ef;
-  color: #6f4e37;
-  border: 1px solid #e3d8ce;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.back-button:hover {
-  background-color: #eee5dd;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(111, 78, 55, 0.1);
-}
-
-.back-button i {
-  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {
