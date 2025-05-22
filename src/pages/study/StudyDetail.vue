@@ -20,15 +20,35 @@
       <!-- 사용자 메뉴 -->
       <div class="user-menu">
         <template v-if="!isLoggedIn">
-          <router-link to="/login" class="menu-item">로그인</router-link>
-          <router-link to="/signup" class="menu-item">회원가입</router-link>
+          <div class="user-profile">
+            <div class="user-actions no-border">
+              <router-link to="/login" class="menu-item">로그인</router-link>
+              <router-link to="/signup" class="menu-item signup">회원가입</router-link>
+            </div>
+          </div>
         </template>
         <template v-else>
-          <div class="user-info">
-            <span class="username">{{ username }}님</span>
+          <div class="user-profile">
+            <div class="profile-badge">
+              <router-link to="/mypage?tab=profile" class="username-link">
+                <h3 class="username">{{ username }} 님</h3>
+              </router-link>
+            </div>
+            <div class="user-stats">
+              <router-link to="/mypage?tab=applied" class="stat-item">
+                <span class="stat-value">0</span>
+                <span class="stat-label">신청 스터디</span>
+              </router-link>
+              <router-link to="/mypage?tab=created" class="stat-item">
+                <span class="stat-value">0</span>
+                <span class="stat-label">운영 스터디</span>
+              </router-link>
+            </div>
+            <div class="user-actions">
+              <router-link to="/mypage" class="menu-item">마이페이지</router-link>
+              <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
+            </div>
           </div>
-          <router-link to="/mypage" class="menu-item">마이페이지</router-link>
-          <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
         </template>
       </div>
     </aside>
@@ -46,7 +66,17 @@
         <div class="left-section">
           <!-- 썸네일 영역 -->
           <div class="thumbnail-section">
-            <img :src="study.thumbnail" :alt="study.title" class="study-thumbnail">
+            <img 
+              :src="study.thumbnail || logoImage" 
+              :alt="study.title" 
+              class="study-thumbnail" 
+              loading="lazy" 
+              decoding="async" 
+              fetchpriority="high"
+              width="800"
+              height="400"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            >
           </div>
           <!-- 참여자 목록 -->
           <div class="participants-section">
@@ -187,7 +217,10 @@
               </div>
             </div>
             <div class="form-actions">
-              <button v-if="isAuthor" class="edit-btn" @click="startEditing">수정하기</button>
+              <template v-if="isAuthor">
+                <button class="edit-btn" @click="startEditing">수정하기</button>
+                <button class="delete-btn" @click="handleDeleteStudy">삭제하기</button>
+              </template>
               <template v-else>
                 <button 
                   v-if="isLoggedIn && !isParticipant" 
@@ -223,6 +256,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import logoImage from '@/assets/logo.png'
 
 const router = useRouter()
 const route = useRoute()
@@ -302,13 +336,13 @@ const fetchStudyDetail = async () => {
       id: route.params.id,
       category_id: 1,
       title: '프로그래밍 스터디',
-      content: '함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.',
+      content: '함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.',
       author: '홍길동',
       currentMembers: 3,
       maxMembers: 5,
       startDate: '2024-03-01',
       endDate: '2024-06-30',
-      thumbnail: 'https://via.placeholder.com/400x300',
+      thumbnail: 'https://picsum.photos/400/300',
       location: {
         sido: '서울특별시',
         sigungu: '강남구',
@@ -365,10 +399,13 @@ const fetchCategories = async () => {
 
 // 카테고리 선택 처리
 const selectCategory = (category) => {
-  selectedCategory.value = category
+  // 메인 페이지로 이동하면서 선택된 카테고리 정보를 쿼리 파라미터로 전달
   router.push({
     path: '/',
-    query: { category: category.id }
+    query: { 
+      category: category.id,
+      categoryName: category.name 
+    }
   })
 }
 
@@ -479,6 +516,32 @@ const saveChanges = async () => {
   }
 }
 
+// 스터디 삭제 처리
+const handleDeleteStudy = async () => {
+  if (!confirm('정말로 이 스터디를 삭제하시겠습니까?')) {
+    return
+  }
+  
+  try {
+    // TODO: 실제 API 호출로 대체
+    // 임시 데이터 삭제 처리
+    alert('스터디가 삭제되었습니다.')
+    router.push('/')
+  } catch (error) {
+    console.error('스터디 삭제 실패:', error)
+    alert('스터디 삭제에 실패했습니다.')
+  }
+}
+
+// Add preload link for logo image
+onMounted(() => {
+  const link = document.createElement('link')
+  link.rel = 'preload'
+  link.as = 'image'
+  link.href = logoImage
+  document.head.appendChild(link)
+})
+
 onMounted(() => {
   fetchCategories()
   checkLoginStatus()
@@ -500,6 +563,23 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+.categories {
+  flex: 1;
+}
+
+.user-menu {
+  margin-bottom: 2rem;
+}
+
+.user-profile {
+  text-align: center;
+  padding: 1.5rem;
+  background-color: #f5f2ef;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-top: auto;
 }
 
 .sidebar-title {
@@ -542,45 +622,107 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.user-menu {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee5dd;
+.user-actions {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(111, 78, 55, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-actions.no-border {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.user-actions .menu-item {
+  width: 100%;
   text-align: center;
-}
-
-.menu-item {
-  display: block;
-  padding: 0.5rem;
-  color: #4b3621;
-  text-decoration: none;
-  border-radius: 6px;
+  padding: 0.75rem;
+  border-radius: 8px;
   transition: all 0.2s ease;
-}
-
-.menu-item:hover {
   background-color: #eee5dd;
   color: #6f4e37;
+  text-decoration: none;
+  font-weight: 500;
 }
 
-.menu-item.logout {
+.user-actions .menu-item:hover {
+  transform: translateY(-2px);
+  background-color: #e3d8ce;
+}
+
+.user-actions .menu-item.signup,
+.user-actions .menu-item.logout {
   background-color: #6f4e37;
   color: white;
 }
 
-.menu-item.logout:hover {
+.user-actions .menu-item.signup:hover,
+.user-actions .menu-item.logout:hover {
   background-color: #8b6b4a;
-  color: white;
 }
 
-.user-info {
+.profile-badge {
+  margin-bottom: 1.5rem;
+}
+
+.username-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.2s ease;
   padding: 0.5rem;
-  margin-bottom: 0.5rem;
+  border-radius: 8px;
+}
+
+.username-link:hover {
+  transform: translateY(-2px);
+  background-color: rgba(111, 78, 55, 0.05);
 }
 
 .username {
-  color: #6f4e37;
+  color: #4b3621;
+  font-size: 1.4rem;
   font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.user-stats {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(111, 78, 55, 0.1);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  background-color: rgba(111, 78, 55, 0.05);
+}
+
+.stat-value {
+  color: #6f4e37;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  color: #8b6b4a;
+  font-size: 0.9rem;
 }
 
 .main-content {
@@ -1033,5 +1175,21 @@ input[type="date"]:focus {
 
 .login-btn:hover {
   background-color: #5a3f2e;
+}
+
+.delete-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #8b6b4a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.delete-btn:hover {
+  background-color: #6f4e37;
 }
 </style> 

@@ -4,33 +4,44 @@
     <div class="mypage-container">
       <!-- 사이드바 -->
       <aside class="sidebar">
-        <div class="user-profile">
-          <div class="profile-badge">
-            <h3 class="username">{{ username }}님</h3>
-            <!-- <span class="user-role">스터디 마스터</span> -->
+        <div class="sidebar-content">
+          <div class="user-profile">
+            <div class="profile-badge">
+              <router-link to="/mypage?tab=profile" class="username-link">
+                <h3 class="username">{{ username }} 님</h3>
+              </router-link>
+            </div>
+            <div class="user-stats">
+              <router-link to="/mypage?tab=applied" class="stat-item">
+                <span class="stat-value">{{ appliedStudies.length }}</span>
+                <span class="stat-label">신청 스터디</span>
+              </router-link>
+              <router-link to="/mypage?tab=created" class="stat-item">
+                <span class="stat-value">{{ createdStudies.length }}</span>
+                <span class="stat-label">운영 스터디</span>
+              </router-link>
+            </div>
           </div>
-          <div class="user-stats">
-            <div class="stat-item">
-              <span class="stat-value">{{ appliedStudies.length }}</span>
-              <span class="stat-label">신청 스터디</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ createdStudies.length }}</span>
-              <span class="stat-label">운영 스터디</span>
-            </div>
+          
+          <div class="menu-list">
+            <a href="#" class="menu-item" :class="{ active: activeMenu === 'applied' }" @click.prevent="activeMenu = 'applied'">
+              신청한 스터디
+            </a>
+            <a href="#" class="menu-item" :class="{ active: activeMenu === 'created' }" @click.prevent="activeMenu = 'created'">
+              내가 만든 스터디
+            </a>
+            <a href="#" class="menu-item" :class="{ active: activeMenu === 'profile' }" @click.prevent="activeMenu = 'profile'">
+              내 정보 수정
+            </a>
           </div>
         </div>
-        
-        <div class="menu-list">
-          <a href="#" class="menu-item" :class="{ active: activeMenu === 'applied' }" @click.prevent="activeMenu = 'applied'">
-            신청한 스터디
-          </a>
-          <a href="#" class="menu-item" :class="{ active: activeMenu === 'created' }" @click.prevent="activeMenu = 'created'">
-            내가 만든 스터디
-          </a>
-          <a href="#" class="menu-item" :class="{ active: activeMenu === 'profile' }" @click.prevent="activeMenu = 'profile'">
-            내 정보 수정
-          </a>
+
+        <!-- 뒤로가기 버튼 -->
+        <div class="back-button-container">
+          <button class="back-button" @click="goBack">
+            <i class="fas fa-arrow-left"></i>
+            뒤로가기
+          </button>
         </div>
       </aside>
 
@@ -58,34 +69,45 @@
 
         <!-- 내가 만든 스터디 -->
         <div v-if="activeMenu === 'created'" class="content-section">
-          <h2 class="section-title">내가 만든 스터디</h2>
-          <div class="study-tabs">
-            <button 
-              class="tab-btn" 
-              :class="{ active: studyTab === 'all' }"
-              @click="studyTab = 'all'"
-            >
-              전체
-            </button>
-            <button 
-              class="tab-btn" 
-              :class="{ active: studyTab === 'recruiting' }"
-              @click="studyTab = 'recruiting'"
-            >
-              모집중
-            </button>
-            <button 
-              class="tab-btn" 
-              :class="{ active: studyTab === 'completed' }"
-              @click="studyTab = 'completed'"
-            >
-              모집완료
-            </button>
+          <div class="content-header">
+            <h2 class="section-title">내가 만든 스터디</h2>
+            <div class="study-tabs">
+              <button 
+                class="tab-btn" 
+                :class="{ active: studyTab === 'all' }"
+                @click="studyTab = 'all'"
+              >
+                전체
+              </button>
+              <button 
+                class="tab-btn" 
+                :class="{ active: studyTab === 'recruiting' }"
+                @click="studyTab = 'recruiting'"
+              >
+                모집중
+              </button>
+              <button 
+                class="tab-btn" 
+                :class="{ active: studyTab === 'completed' }"
+                @click="studyTab = 'completed'"
+              >
+                모집완료
+              </button>
+            </div>
           </div>
           <div class="study-list">
             <div v-for="study in filteredCreatedStudies" :key="study.id" class="study-card" @click="goToStudyDetail(study.id)">
               <div class="study-thumbnail">
-                <img :src="study.thumbnail" :alt="study.title">
+                <img 
+                  :src="study.thumbnail || logoImage" 
+                  :alt="study.title" 
+                  loading="lazy" 
+                  decoding="async" 
+                  fetchpriority="high"
+                  width="400"
+                  height="300"
+                  sizes="(max-width: 768px) 100vw, 25vw"
+                >
               </div>
               <div class="study-info">
                 <h3 class="study-title">{{ study.title }}</h3>
@@ -101,41 +123,43 @@
 
         <!-- 신청한 스터디 -->
         <div v-if="activeMenu === 'applied'" class="content-section">
-          <h2 class="section-title">신청한 스터디</h2>
-          <div class="study-tabs">
-            <button 
-              class="tab-btn" 
-              :class="{ active: appliedTab === 'all' }"
-              @click="appliedTab = 'all'"
-            >
-              전체
-            </button>
-            <button 
-              class="tab-btn" 
-              :class="{ active: appliedTab === 'waiting' }"
-              @click="appliedTab = 'waiting'"
-            >
-              승인대기
-            </button>
-            <button 
-              class="tab-btn" 
-              :class="{ active: appliedTab === 'approved' }"
-              @click="appliedTab = 'approved'"
-            >
-              승인
-            </button>
-            <button 
-              class="tab-btn" 
-              :class="{ active: appliedTab === 'rejected' }"
-              @click="appliedTab = 'rejected'"
-            >
-              거절
-            </button>
+          <div class="content-header">
+            <h2 class="section-title">신청한 스터디</h2>
+            <div class="study-tabs">
+              <button 
+                class="tab-btn" 
+                :class="{ active: appliedTab === 'all' }"
+                @click="appliedTab = 'all'"
+              >
+                전체
+              </button>
+              <button 
+                class="tab-btn" 
+                :class="{ active: appliedTab === 'waiting' }"
+                @click="appliedTab = 'waiting'"
+              >
+                승인대기
+              </button>
+              <button 
+                class="tab-btn" 
+                :class="{ active: appliedTab === 'approved' }"
+                @click="appliedTab = 'approved'"
+              >
+                승인
+              </button>
+              <button 
+                class="tab-btn" 
+                :class="{ active: appliedTab === 'rejected' }"
+                @click="appliedTab = 'rejected'"
+              >
+                거절
+              </button>
+            </div>
           </div>
           <div class="study-list">
             <div v-for="study in filteredAppliedStudies" :key="study.id" class="study-card" @click="goToStudyDetail(study.id)">
               <div class="study-thumbnail">
-                <img :src="study.thumbnail" :alt="study.title">
+                <img :src="study.thumbnail || logoImage" :alt="study.title" loading="lazy" decoding="async" fetchpriority="high">
               </div>
               <div class="study-info">
                 <h3 class="study-title">{{ study.title }}</h3>
@@ -154,13 +178,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import Header from '@/components/Header.vue'
+import logoImage from '@/assets/logo.png'
 
 const router = useRouter()
+const route = useRoute()
 const activeMenu = ref('applied')
 const username = ref('홍길동') // TODO: 실제 사용자 이름으로 대체
+
+// URL의 tab 파라미터에 따라 메뉴 활성화
+watch(() => route.query.tab, (newTab) => {
+  if (newTab === 'profile') {
+    activeMenu.value = 'profile'
+  } else if (newTab === 'created') {
+    activeMenu.value = 'created'
+  } else if (newTab === 'applied') {
+    activeMenu.value = 'applied'
+  }
+}, { immediate: true })
 
 // 프로필 정보
 const profile = ref({
@@ -210,6 +247,11 @@ const goToStudyDetail = (studyId) => {
   router.push(`/study/${studyId}`)
 }
 
+// 뒤로가기 함수
+const goBack = () => {
+  router.back()
+}
+
 // 초기 데이터 로드
 onMounted(() => {
   // TODO: API 호출로 대체
@@ -225,7 +267,7 @@ onMounted(() => {
       id: 1,
       title: '프로그래밍 스터디',
       content: '함께 프로그래밍을 배우고 실력을 향상시켜요!',
-      thumbnail: 'https://via.placeholder.com/150',
+      thumbnail: 'https://picsum.photos/400/300',
       currentMembers: 3,
       maxMembers: 5,
       status: '모집중'
@@ -234,7 +276,7 @@ onMounted(() => {
       id: 2,
       title: '디자인 스터디',
       content: 'UI/UX 디자인을 함께 배워요',
-      thumbnail: 'https://via.placeholder.com/150',
+      thumbnail: 'https://picsum.photos/400/301',
       currentMembers: 5,
       maxMembers: 5,
       status: '모집완료'
@@ -246,7 +288,7 @@ onMounted(() => {
       id: 3,
       title: '알고리즘 스터디',
       content: '코딩 테스트 대비 알고리즘 문제 풀이',
-      thumbnail: 'https://via.placeholder.com/150',
+      thumbnail: 'https://picsum.photos/400/302',
       currentMembers: 4,
       maxMembers: 6,
       applicationStatus: '승인대기'
@@ -255,7 +297,7 @@ onMounted(() => {
       id: 4,
       title: '영어 회화 스터디',
       content: '매일 영어로 대화하며 실력 향상',
-      thumbnail: 'https://via.placeholder.com/150',
+      thumbnail: 'https://picsum.photos/400/303',
       currentMembers: 3,
       maxMembers: 4,
       applicationStatus: '승인'
@@ -264,12 +306,19 @@ onMounted(() => {
       id: 5,
       title: '마케팅 스터디',
       content: '디지털 마케팅 전략과 실전 사례',
-      thumbnail: 'https://via.placeholder.com/150',
+      thumbnail: 'https://picsum.photos/400/304',
       currentMembers: 6,
       maxMembers: 6,
       applicationStatus: '거절'
     }
   ]
+
+  // Add preload link for logo image
+  const link = document.createElement('link')
+  link.rel = 'preload'
+  link.as = 'image'
+  link.href = logoImage
+  document.head.appendChild(link)
 })
 </script>
 
@@ -291,19 +340,42 @@ onMounted(() => {
   background-color: #fbf9f8;
   padding: 2rem 1rem;
   border-right: 1px solid #eee5dd;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 60px);
+}
+
+.sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .user-profile {
   text-align: center;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #fbf9f8 0%, #eee5dd 100%);
+  background-color: #f5f2ef;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .profile-badge {
   margin-bottom: 1.5rem;
+}
+
+.username-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.2s ease;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.username-link:hover {
+  transform: translateY(-2px);
+  background-color: rgba(111, 78, 55, 0.05);
 }
 
 .username {
@@ -334,6 +406,16 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  background-color: rgba(111, 78, 55, 0.05);
 }
 
 .stat-value {
@@ -381,18 +463,58 @@ onMounted(() => {
 .main-content {
   flex: 1;
   padding: 2rem;
+  background-color: #faf7f5;
 }
 
 .content-section {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
 .section-title {
   color: #4b3621;
   font-size: 1.5rem;
   font-weight: 600;
-  margin-bottom: 2rem;
+  margin: 0;
+}
+
+.study-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d4c4b7;
+  background-color: transparent;
+  color: #4b3621;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.tab-btn:hover {
+  background-color: #eee5dd;
+  color: #6f4e37;
+  transform: translateY(-2px);
+  border-color: #c4b3a6;
+}
+
+.tab-btn.active {
+  background-color: #6f4e37;
+  color: white;
+  border-color: #6f4e37;
+  box-shadow: 0 2px 4px rgba(111, 78, 55, 0.2);
 }
 
 .profile-form {
@@ -445,30 +567,54 @@ onMounted(() => {
 
 .study-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+  max-height: calc(100vh - 230px);
+  overflow-y: auto;
+  padding-right: 1rem;
+  overscroll-behavior: contain;
+}
+
+.study-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.study-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.study-list::-webkit-scrollbar-thumb {
+  background: #6f4e37;
+  border-radius: 4px;
+}
+
+.study-list::-webkit-scrollbar-thumb:hover {
+  background: #8b6b4a;
 }
 
 .study-card {
   background-color: white;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease;
   cursor: pointer;
-  border: 1px solid rgba(111, 78, 55, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .study-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 8px rgba(111, 78, 55, 0.15);
-  border-color: #eee5dd;
 }
 
 .study-thumbnail {
   width: 100%;
-  height: 200px;
+  height: 160px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .study-thumbnail img {
@@ -478,33 +624,46 @@ onMounted(() => {
 }
 
 .study-info {
-  padding: 1rem;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 120px;
+  position: relative;
 }
 
 .study-title {
   color: #4b3621;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
+  line-height: 1.4;
 }
 
 .study-content {
   color: #666;
-  font-size: 0.9rem;
-  margin: 0 0 1rem 0;
+  font-size: 0.85rem;
+  margin: 0 0 2.5rem 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  flex: 1;
+  min-height: 2.4em;
+  line-height: 1.4;
 }
 
 .study-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #6f4e37;
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  right: 0.75rem;
   padding-top: 0.5rem;
   border-top: 1px solid #eee5dd;
 }
@@ -542,39 +701,37 @@ onMounted(() => {
   color: #c62828;
 }
 
-.study-tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  background-color: white;
-  padding: 0.75rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+.back-button-container {
+  padding: 1rem;
+  border-top: 1px solid #eee5dd;
+  margin-top: auto;
 }
 
-.tab-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid #eee5dd;
-  background-color: white;
-  color: #4b3621;
-  border-radius: 6px;
+.back-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #f5f2ef;
+  color: #6f4e37;
+  border: 1px solid #e3d8ce;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
-.tab-btn:hover {
+.back-button:hover {
   background-color: #eee5dd;
-  color: #6f4e37;
   transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(111, 78, 55, 0.1);
 }
 
-.tab-btn.active {
-  background-color: #6f4e37;
-  color: white;
-  border-color: #6f4e37;
-  box-shadow: 0 2px 4px rgba(111, 78, 55, 0.2);
+.back-button i {
+  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {
@@ -591,6 +748,10 @@ onMounted(() => {
 
   .main-content {
     padding: 1rem;
+  }
+
+  .content-section {
+    padding: 0;
   }
 
   .study-list {

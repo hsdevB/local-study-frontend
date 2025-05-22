@@ -20,16 +20,36 @@
       <!-- 사용자 메뉴 -->
       <div class="user-menu">
         <template v-if="!isLoggedIn">
-          <router-link to="/login" class="menu-item">로그인</router-link>
-          <router-link to="/signup" class="menu-item">회원가입</router-link>
-        </template>
-        <template v-else>
-          <div class="user-info">
-            <span class="username">{{ username }}님</span>
+          <div class="user-profile">
+            <div class="user-actions no-border">
+              <router-link to="/login" class="menu-item">로그인</router-link>
+              <router-link to="/signup" class="menu-item signup">회원가입</router-link>
+            </div>
           </div>
+        </template>
+      </div>
+
+      <!-- 사용자 프로필 -->
+      <div v-if="isLoggedIn" class="user-profile">
+        <div class="profile-badge">
+          <router-link to="/mypage?tab=profile" class="username-link">
+            <h3 class="username">{{ username }} 님</h3>
+          </router-link>
+        </div>
+        <div class="user-stats">
+          <router-link to="/mypage?tab=applied" class="stat-item">
+            <span class="stat-value">{{ appliedStudies.length }}</span>
+            <span class="stat-label">신청 스터디</span>
+          </router-link>
+          <router-link to="/mypage?tab=created" class="stat-item">
+            <span class="stat-value">{{ createdStudies.length }}</span>
+            <span class="stat-label">운영 스터디</span>
+          </router-link>
+        </div>
+        <div class="user-actions">
           <router-link to="/mypage" class="menu-item">마이페이지</router-link>
           <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
-        </template>
+        </div>
       </div>
     </aside>
 
@@ -62,7 +82,16 @@
       <div class="study-list" @wheel.prevent="handleStudyListScroll">
         <div v-for="study in filteredStudies" :key="study.id" class="study-card" @click="goToStudyDetail(study.id)">
           <div class="study-thumbnail">
-            <img :src="study.thumbnail" :alt="study.title">
+            <img 
+              :src="study.thumbnail || logoImage" 
+              :alt="study.title" 
+              loading="lazy" 
+              decoding="async" 
+              fetchpriority="high"
+              width="400"
+              height="300"
+              sizes="(max-width: 768px) 100vw, 25vw"
+            >
           </div>
           <div class="study-info">
             <h3 class="study-title">{{ study.title }}</h3>
@@ -84,25 +113,6 @@
           <span class="btn-text">+</span>
         </button>
       </div>
-
-      <!-- 페이지네이션 -->
-      <div class="pagination">
-        <button 
-          class="page-btn" 
-          :disabled="currentPage === 1"
-          @click="changePage(currentPage - 1)"
-        >
-          이전
-        </button>
-        <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-        <button 
-          class="page-btn" 
-          :disabled="currentPage === totalPages"
-          @click="changePage(currentPage + 1)"
-        >
-          다음
-        </button>
-      </div>
     </main>
   </div>
 </template>
@@ -110,6 +120,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import logoImage from '@/assets/logo.png'
 
 const router = useRouter()
 const route = useRoute()
@@ -151,27 +162,6 @@ const locationData = {
 // 스터디 목록 관련 상태
 const studies = ref([])
 const currentPage = ref(1)
-const totalPages = computed(() => {
-  if (!selectedCategory.value) return 1
-  
-  let filtered = studies.value.filter(study => 
-    study.categoryId === selectedCategory.value.id
-  )
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.trim()
-    if (query) {
-      filtered = filtered.filter(study => {
-        const titleSimilarity = calculateSimilarity(study.title, query)
-        const contentSimilarity = calculateSimilarity(study.content, query)
-        return Math.max(titleSimilarity, contentSimilarity) >= 0.3
-      })
-    }
-  }
-  
-  return Math.max(1, Math.ceil(filtered.length / itemsPerPage))
-})
-const itemsPerPage = 9 // 한 페이지당 9개 (3x3)
 
 // 검색어와 문자열의 유사도를 계산하는 함수
 const calculateSimilarity = (str1, str2) => {
@@ -238,21 +228,23 @@ const resetAllFilters = () => {
 // URL 쿼리 파라미터 처리
 const processSearchQuery = () => {
   const query = route.query.search
+  const categoryId = route.query.category
+  const categoryName = route.query.categoryName
+
   if (query) {
     handleSearch(query)
-  } else {
-    // URL에 검색어가 없는 경우 모든 필터 초기화
-    resetAllFilters()
   }
-}
 
-// 카테고리 쿼리 파라미터 처리
-const processCategoryQuery = () => {
-  const categoryId = route.query.category
   if (categoryId) {
-    const category = categories.value.find(cat => cat.id === Number(categoryId))
+    const category = categories.value.find(cat => cat.id === parseInt(categoryId))
     if (category) {
       selectedCategory.value = category
+    } else {
+      // 카테고리를 찾지 못한 경우, 새로 생성
+      selectedCategory.value = {
+        id: parseInt(categoryId),
+        name: categoryName || '카테고리'
+      }
     }
   }
 }
@@ -268,17 +260,6 @@ watch(() => route.query.search, (newQuery) => {
   }
 })
 
-watch(() => route.query.category, (newCategoryId) => {
-  if (newCategoryId) {
-    const category = categories.value.find(cat => cat.id === Number(newCategoryId))
-    if (category) {
-      selectedCategory.value = category
-    }
-  } else {
-    selectedCategory.value = null
-  }
-})
-
 // 리셋 이벤트 처리
 const handleReset = () => {
   resetAllFilters()
@@ -290,6 +271,13 @@ const goToCreateStudy = () => {
     alert('로그인이 필요한 서비스입니다.')
     router.push('/login')
     return
+  }
+  // 현재 선택된 카테고리 정보를 저장
+  if (selectedCategory.value) {
+    localStorage.setItem('lastSelectedCategory', JSON.stringify({
+      id: selectedCategory.value.id,
+      name: selectedCategory.value.name
+    }))
   }
   router.push('/create-study')
 }
@@ -309,23 +297,7 @@ const filteredStudies = computed(() => {
       filtered = filtered.filter(study => {
         const titleSimilarity = calculateSimilarity(study.title, query)
         const contentSimilarity = calculateSimilarity(study.content, query)
-        
-        // 제목과 내용의 유사도 중 더 높은 값을 사용
-        const maxSimilarity = Math.max(titleSimilarity, contentSimilarity)
-        
-        // 유사도가 0.3 이상인 경우만 포함 (임계값 조정)
-        return maxSimilarity >= 0.3
-      }).sort((a, b) => {
-        // 유사도에 따라 정렬 (높은 순)
-        const similarityA = Math.max(
-          calculateSimilarity(a.title, query),
-          calculateSimilarity(a.content, query)
-        )
-        const similarityB = Math.max(
-          calculateSimilarity(b.title, query),
-          calculateSimilarity(b.content, query)
-        )
-        return similarityB - similarityA
+        return Math.max(titleSimilarity, contentSimilarity) >= 0.3
       })
     }
   }
@@ -333,14 +305,11 @@ const filteredStudies = computed(() => {
   // 지역 필터링
   if (selectedSido.value) {
     filtered = filtered.filter(study => {
-      // 스터디의 지역 정보가 선택된 시/도와 일치하는지 확인
       const matchesSido = study.location?.sido === selectedSido.value
       
-      // 시/군/구가 선택된 경우 추가 필터링
       if (selectedSigungu.value) {
         const matchesSigungu = study.location?.sigungu === selectedSigungu.value
         
-        // 읍/면/동이 선택된 경우 추가 필터링
         if (selectedDong.value) {
           return matchesSido && matchesSigungu && study.location?.dong === selectedDong.value
         }
@@ -352,17 +321,7 @@ const filteredStudies = computed(() => {
     })
   }
   
-  const startIndex = (currentPage.value - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  
-  return filtered.slice(startIndex, endIndex)
-})
-
-// 페이지 범위 보호를 위한 watch 추가
-watch([currentPage, totalPages], ([newPage, total]) => {
-  if (newPage > total) {
-    currentPage.value = total
-  }
+  return filtered
 })
 
 // 카테고리 데이터 가져오기
@@ -440,7 +399,7 @@ const fetchStudies = async () => {
         author: '홍길동',
         currentMembers: 3,
         maxMembers: 5,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: '',
         location: {
           sido: '서울특별시',
           sigungu: '강남구',
@@ -455,7 +414,7 @@ const fetchStudies = async () => {
         author: '김철수',
         currentMembers: 4,
         maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/301',
         location: {
           sido: '서울특별시',
           sigungu: '서초구',
@@ -470,7 +429,7 @@ const fetchStudies = async () => {
         author: '이영희',
         currentMembers: 2,
         maxMembers: 4,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/302',
         location: {
           sido: '부산광역시',
           sigungu: '해운대구',
@@ -479,13 +438,13 @@ const fetchStudies = async () => {
       },
       {
         id: 4,
-        categoryId: 2,
+        categoryId: 1,
         title: 'UI/UX 디자인 스터디',
         content: '사용자 경험을 중심으로 한 디자인 학습',
         author: '박지민',
         currentMembers: 5,
         maxMembers: 8,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/303',
         location: {
           sido: '서울특별시',
           sigungu: '마포구',
@@ -494,13 +453,13 @@ const fetchStudies = async () => {
       },
       {
         id: 5,
-        categoryId: 2,
+        categoryId: 1,
         title: '그래픽 디자인 기초',
         content: '포토샵과 일러스트레이터 기초부터 실전까지',
         author: '최유진',
         currentMembers: 3,
         maxMembers: 5,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/304',
         location: {
           sido: '인천광역시',
           sigungu: '연수구',
@@ -509,13 +468,13 @@ const fetchStudies = async () => {
       },
       {
         id: 6,
-        categoryId: 3,
+        categoryId: 1,
         title: '디지털 마케팅 스터디',
         content: 'SNS 마케팅과 콘텐츠 제작 실습',
         author: '정다은',
         currentMembers: 4,
         maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/305',
         location: {
           sido: '서울특별시',
           sigungu: '강남구',
@@ -524,13 +483,13 @@ const fetchStudies = async () => {
       },
       {
         id: 7,
-        categoryId: 3,
+        categoryId: 1,
         title: '브랜드 마케팅 전략',
         content: '브랜드 아이덴티티 구축과 마케팅 전략 수립',
         author: '김민준',
         currentMembers: 2,
         maxMembers: 4,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/306',
         location: {
           sido: '부산광역시',
           sigungu: '남구',
@@ -539,13 +498,13 @@ const fetchStudies = async () => {
       },
       {
         id: 8,
-        categoryId: 4,
+        categoryId: 1,
         title: '스타트업 창업 스터디',
         content: '창업 아이템 발굴부터 비즈니스 모델 설계까지',
         author: '이승우',
         currentMembers: 6,
         maxMembers: 8,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/307',
         location: {
           sido: '서울특별시',
           sigungu: '송파구',
@@ -554,13 +513,13 @@ const fetchStudies = async () => {
       },
       {
         id: 9,
-        categoryId: 4,
+        categoryId: 1,
         title: '재무관리 스터디',
         content: '기업 재무제표 분석과 투자 전략',
         author: '박서연',
         currentMembers: 3,
         maxMembers: 5,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/308',
         location: {
           sido: '인천광역시',
           sigungu: '남동구',
@@ -569,13 +528,13 @@ const fetchStudies = async () => {
       },
       {
         id: 10,
-        categoryId: 5,
+        categoryId: 1,
         title: '영어 회화 스터디',
         content: '실전 영어 회화와 토론',
         author: '최지원',
         currentMembers: 4,
         maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/309',
         location: {
           sido: '서울특별시',
           sigungu: '강서구',
@@ -584,13 +543,13 @@ const fetchStudies = async () => {
       },
       {
         id: 11,
-        categoryId: 5,
+        categoryId: 1,
         title: '일본어 JLPT 준비반',
         content: 'JLPT N2 합격을 위한 스터디',
         author: '김수진',
         currentMembers: 5,
         maxMembers: 7,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/310',
         location: {
           sido: '부산광역시',
           sigungu: '동래구',
@@ -605,7 +564,7 @@ const fetchStudies = async () => {
         author: '이준호',
         currentMembers: 3,
         maxMembers: 5,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/311',
         location: {
           sido: '서울특별시',
           sigungu: '서초구',
@@ -614,13 +573,13 @@ const fetchStudies = async () => {
       },
       {
         id: 13,
-        categoryId: 2,
+        categoryId: 1,
         title: '모션 그래픽 디자인',
         content: '애프터이펙트를 활용한 모션 그래픽 제작',
         author: '정민서',
         currentMembers: 2,
         maxMembers: 4,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/312',
         location: {
           sido: '인천광역시',
           sigungu: '연수구',
@@ -629,13 +588,13 @@ const fetchStudies = async () => {
       },
       {
         id: 14,
-        categoryId: 3,
+        categoryId: 1,
         title: '콘텐츠 마케팅 스터디',
         content: '유튜브 채널 운영과 콘텐츠 제작',
         author: '박현우',
         currentMembers: 4,
         maxMembers: 6,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/313',
         location: {
           sido: '서울특별시',
           sigungu: '마포구',
@@ -644,13 +603,13 @@ const fetchStudies = async () => {
       },
       {
         id: 15,
-        categoryId: 4,
+        categoryId: 1,
         title: '투자 분석 스터디',
         content: '주식 투자와 포트폴리오 관리',
         author: '김태영',
         currentMembers: 5,
         maxMembers: 7,
-        thumbnail: 'https://via.placeholder.com/150',
+        thumbnail: 'https://picsum.photos/400/314',
         location: {
           sido: '부산광역시',
           sigungu: '해운대구',
@@ -661,12 +620,6 @@ const fetchStudies = async () => {
   } catch (error) {
     console.error('스터디 목록 로딩 실패:', error)
   }
-}
-
-// 페이지 변경
-const changePage = (page) => {
-  currentPage.value = page
-  // fetchStudies() 호출 제거 - 더 이상 필요하지 않음
 }
 
 // 스터디 상세 페이지로 이동
@@ -708,12 +661,47 @@ const resetLocation = () => {
   dongList.value = []
 }
 
+const appliedStudies = ref([])
+const createdStudies = ref([])
+
+// 초기 데이터 로드
 onMounted(() => {
   fetchCategories()
   checkLoginStatus()
   fetchStudies()
-  processSearchQuery()
-  processCategoryQuery() // 카테고리 쿼리 파라미터 처리 추가
+  processSearchQuery() // URL 쿼리 파라미터 처리
+  
+  // 임시 데이터
+  appliedStudies.value = [
+    {
+      id: 3,
+      title: '알고리즘 스터디',
+      content: '코딩 테스트 대비 알고리즘 문제 풀이',
+      thumbnail: 'https://via.placeholder.com/150',
+      currentMembers: 4,
+      maxMembers: 6,
+      applicationStatus: '승인대기'
+    }
+  ]
+
+  createdStudies.value = [
+    {
+      id: 1,
+      title: '프로그래밍 스터디',
+      content: '함께 프로그래밍을 배우고 실력을 향상시켜요!',
+      thumbnail: 'https://via.placeholder.com/150',
+      currentMembers: 3,
+      maxMembers: 5,
+      status: '모집중'
+    }
+  ]
+
+  // Add preload link for logo image
+  const link = document.createElement('link')
+  link.rel = 'preload'
+  link.as = 'image'
+  link.href = logoImage
+  document.head.appendChild(link)
 })
 
 // 컴포넌트 메서드 노출
@@ -781,44 +769,66 @@ defineExpose({
 }
 
 .user-menu {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee5dd;
+  margin-bottom: 2rem;
+}
+
+.user-profile {
   text-align: center;
+  padding: 1.5rem;
+  background-color: #f5f2ef;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-top: auto;
 }
 
-.menu-item {
-  display: block;
-  padding: 0.5rem;
-  color: #4b3621;
-  text-decoration: none;
-  border-radius: 6px;
+.user-actions {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(111, 78, 55, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-actions.no-border {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.user-actions .menu-item {
+  width: 100%;
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 8px;
   transition: all 0.2s ease;
-}
-
-.menu-item:hover {
   background-color: #eee5dd;
   color: #6f4e37;
+  text-decoration: none;
+  font-weight: 500;
 }
 
-.menu-item.logout {
+.user-actions .menu-item:hover {
+  transform: translateY(-2px);
+  background-color: #e3d8ce;
+}
+
+.user-actions .menu-item.logout {
   background-color: #6f4e37;
   color: white;
 }
 
-.menu-item.logout:hover {
+.user-actions .menu-item.logout:hover {
   background-color: #8b6b4a;
+}
+
+.user-actions .menu-item.signup {
+  background-color: #6f4e37;
   color: white;
 }
 
-.user-info {
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.username {
-  color: #6f4e37;
-  font-weight: 600;
+.user-actions .menu-item.signup:hover {
+  background-color: #8b6b4a;
 }
 
 .main-content {
@@ -876,10 +886,10 @@ h3 {
 
 .study-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
   margin-bottom: 2rem;
-  max-height: calc(100vh - 300px);
+  max-height: calc(100vh - 230px);
   overflow-y: auto;
   padding-right: 1rem;
   overscroll-behavior: contain;
@@ -905,7 +915,7 @@ h3 {
 
 .study-card {
   background-color: white;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
@@ -921,7 +931,7 @@ h3 {
 
 .study-thumbnail {
   width: 100%;
-  height: 200px;
+  height: 160px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -933,17 +943,17 @@ h3 {
 }
 
 .study-info {
-  padding: 1rem;
+  padding: 0.75rem;
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 150px;
+  min-height: 120px;
   position: relative;
 }
 
 .study-title {
   color: #4b3621;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
   line-height: 1.4;
@@ -951,62 +961,36 @@ h3 {
 
 .study-content {
   color: #666;
-  font-size: 0.9rem;
-  margin: 0 0 3rem 0;
+  font-size: 0.85rem;
+  margin: 0 0 2.5rem 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   flex: 1;
-  min-height: 2.7em;
-  line-height: 1.5;
+  min-height: 2.4em;
+  line-height: 1.4;
 }
 
 .study-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #6f4e37;
   position: absolute;
-  bottom: 1rem;
-  left: 1rem;
-  right: 1rem;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  right: 0.75rem;
   padding-top: 0.5rem;
   border-top: 1px solid #eee5dd;
 }
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.page-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  background-color: #6f4e37;
-  color: white;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.page-btn:hover:not(:disabled) {
-  background-color: #8b6b4a;
-}
-
-.page-btn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
+.pagination,
+.page-btn,
 .page-info {
-  color: #4b3621;
-  font-weight: 500;
+  display: none;
 }
 
 .create-study-section {
@@ -1043,12 +1027,14 @@ h3 {
 }
 
 .categories {
-  margin-top: 0;
+  flex: 1;
 }
 
 /* 플로팅 버튼 스타일 */
 .floating-create-btn {
-  position: relative;
+  position: fixed;
+  bottom: 5rem;
+  right: 5rem;
   width: 64px;
   height: 64px;
   border: none;
@@ -1064,7 +1050,6 @@ h3 {
   z-index: 1000;
   font-size: 1.75rem;
   font-weight: 500;
-  margin: 1rem auto;
 }
 
 .floating-create-btn .btn-text {
@@ -1073,6 +1058,7 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: -2px; /* + 기호를 정확히 중앙에 위치시키기 위한 조정 */
 }
 
 .floating-create-btn:hover {
@@ -1096,5 +1082,71 @@ h3 {
   .floating-create-btn .btn-text {
     font-size: 1.75rem;
   }
+}
+
+.profile-badge {
+  margin-bottom: 1.5rem;
+}
+
+.username {
+  color: #4b3621;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.user-stats {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(111, 78, 55, 0.1);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  color: #6f4e37;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  color: #8b6b4a;
+  font-size: 0.9rem;
+}
+
+.username-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.2s ease;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.username-link:hover {
+  transform: translateY(-2px);
+  background-color: rgba(111, 78, 55, 0.05);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  background-color: rgba(111, 78, 55, 0.05);
 }
 </style>

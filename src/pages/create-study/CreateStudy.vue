@@ -1,135 +1,137 @@
 <template>
   <div class="create-study-container">
-    <!-- 카카오맵 스크립트 -->
-    
-    <h1 class="page-title">스터디 만들기</h1>
-    
-    <form @submit.prevent="handleFormSubmit" class="create-study-form">
-      <div class="form-group">
-        <label for="title">스터디 제목</label>
-        <input 
-          type="text" 
-          id="title" 
-          v-model="formData.title" 
-          required 
-          placeholder="스터디 제목을 입력하세요"
-        >
-      </div>
+    <div class="card shadow-sm p-4" style="width: 100%; max-width: 480px;">
+      <div class="card-body text-center">
+        <h1 class="page-title">스터디 만들기</h1>
+        
+        <form @submit.prevent="handleFormSubmit" class="text-start">
+          <div class="form-group">
+            <label for="title">스터디 제목</label>
+            <input 
+              type="text" 
+              id="title" 
+              v-model="formData.title" 
+              required 
+              placeholder="스터디 제목을 입력하세요"
+            >
+          </div>
 
-      <div class="form-group">
-        <label for="category">카테고리</label>
-        <select 
-          id="category" 
-          v-model="formData.categoryId" 
-          required
-          class="form-select"
-        >
-          <option value="" disabled>카테고리를 선택하세요</option>
-          <option v-for="category in categories" :key="category.id" :value="category.id">
-            {{ category.name }}
-          </option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="content">스터디 내용</label>
-        <textarea 
-          id="content" 
-          v-model="formData.content" 
-          required 
-          placeholder="스터디에 대한 설명을 입력하세요"
-          rows="5"
-        ></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>스터디 지역</label>
-        <div class="location-selector">
-          <div class="location-dropdowns">
-            <select v-model="selectedSido" @change="handleSidoChange" class="form-select" required>
-              <option value="">시/도 선택</option>
-              <option v-for="sido in sidoList" :key="sido" :value="sido">
-                {{ sido }}
-              </option>
-            </select>
-            <select v-model="selectedSigungu" @change="handleSigunguChange" class="form-select" :disabled="!selectedSido" required>
-              <option value="">시/군/구 선택</option>
-              <option v-for="sigungu in sigunguList" :key="sigungu" :value="sigungu">
-                {{ sigungu }}
-              </option>
-            </select>
-            <select v-model="selectedDong" @change="handleDongChange" class="form-select" :disabled="!selectedSigungu" required>
-              <option value="">읍/면/동 선택</option>
-              <option v-for="dong in dongList" :key="dong" :value="dong">
-                {{ dong }}
+          <div class="form-group">
+            <label for="category">카테고리</label>
+            <select 
+              id="category" 
+              v-model="formData.categoryId" 
+              required
+              class="form-select"
+            >
+              <option value="" disabled>카테고리를 선택하세요</option>
+              <option v-for="category in categories" :key="category.id" :value="category.id">
+                {{ category.name }}
               </option>
             </select>
           </div>
-          <div class="selected-location" v-if="selectedLocation">
-            <div class="location-info">
-              <span class="location-label">선택된 지역:</span>
-              <span class="location-value">{{ selectedLocation }}</span>
+
+          <div class="form-group">
+            <label for="content">스터디 내용</label>
+            <textarea 
+              id="content" 
+              v-model="formData.content" 
+              required 
+              placeholder="스터디에 대한 설명을 입력하세요"
+              rows="5"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>스터디 지역</label>
+            <div class="location-selector">
+              <div class="location-dropdowns">
+                <select v-model="selectedSido" @change="handleSidoChange" class="form-select" required>
+                  <option value="">시/도 선택</option>
+                  <option v-for="sido in sidoList" :key="sido" :value="sido">
+                    {{ sido }}
+                  </option>
+                </select>
+                <select v-model="selectedSigungu" @change="handleSigunguChange" class="form-select" :disabled="!selectedSido" required>
+                  <option value="">시/군/구 선택</option>
+                  <option v-for="sigungu in sigunguList" :key="sigungu" :value="sigungu">
+                    {{ sigungu }}
+                  </option>
+                </select>
+                <select v-model="selectedDong" @change="handleDongChange" class="form-select" :disabled="!selectedSigungu" required>
+                  <option value="">읍/면/동 선택</option>
+                  <option v-for="dong in dongList" :key="dong" :value="dong">
+                    {{ dong }}
+                  </option>
+                </select>
+              </div>
+              <div class="selected-location" v-if="selectedLocation">
+                <div class="location-info">
+                  <span class="location-label">선택된 지역:</span>
+                  <span class="location-value">{{ selectedLocation }}</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="startDate">시작일</label>
-          <input 
-            type="date" 
-            id="startDate" 
-            v-model="formData.startDate" 
-            required
-            class="date-input"
-          >
-        </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="startDate">시작일</label>
+              <input 
+                type="date" 
+                id="startDate" 
+                v-model="formData.startDate" 
+                required
+                class="date-input"
+              >
+            </div>
 
-        <div class="form-group">
-          <label for="endDate">종료일</label>
-          <input 
-            type="date" 
-            id="endDate" 
-            v-model="formData.endDate" 
-            required
-            class="date-input"
-          >
-        </div>
-      </div>
+            <div class="form-group">
+              <label for="endDate">종료일</label>
+              <input 
+                type="date" 
+                id="endDate" 
+                v-model="formData.endDate" 
+                required
+                class="date-input"
+              >
+            </div>
+          </div>
 
-      <div class="form-group">
-        <label for="maxMembers">최대 인원수</label>
-        <input 
-          type="number" 
-          id="maxMembers" 
-          v-model="formData.maxMembers" 
-          required 
-          min="2" 
-          max="20"
-          class="number-input"
-        >
-      </div>
+          <div class="form-group">
+            <label for="maxMembers">최대 인원수</label>
+            <input 
+              type="number" 
+              id="maxMembers" 
+              v-model="formData.maxMembers" 
+              required 
+              min="2" 
+              max="20"
+              class="number-input"
+            >
+          </div>
 
-      <div class="form-group">
-        <label for="thumbnail">스터디 썸네일</label>
-        <input 
-          type="file" 
-          id="thumbnail" 
-          @change="handleThumbnailChange" 
-          accept="image/*"
-          required
-        >
-        <div v-if="thumbnailPreview" class="thumbnail-preview">
-          <img :src="thumbnailPreview" alt="썸네일 미리보기" @error="handleImageError">
-        </div>
-      </div>
+          <div class="form-group">
+            <label for="thumbnail">스터디 썸네일</label>
+            <input 
+              type="file" 
+              id="thumbnail" 
+              @change="handleThumbnailChange" 
+              accept="image/*"
+              required
+            >
+            <div v-if="thumbnailPreview" class="thumbnail-preview">
+              <img :src="thumbnailPreview" alt="썸네일 미리보기" @error="handleImageError">
+            </div>
+          </div>
 
-      <div class="form-actions">
-        <button type="button" class="cancel-btn" @click="goBack">취소</button>
-        <button type="submit" class="submit-btn">스터디 만들기</button>
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" @click="handleCancel">취소</button>
+            <button type="submit" class="submit-btn">스터디 만들기</button>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   </div>
 </template>
 
@@ -280,8 +282,22 @@ const handleFormSubmit = async () => {
   await handleSubmit()
 }
 
-const goBack = () => {
-  router.back()
+// 취소 버튼 클릭 처리
+const handleCancel = () => {
+  // 저장된 카테고리 정보 가져오기
+  const savedCategory = localStorage.getItem('lastSelectedCategory')
+  if (savedCategory) {
+    const category = JSON.parse(savedCategory)
+    router.push({
+      path: '/',
+      query: { 
+        category: category.id,
+        categoryName: category.name 
+      }
+    })
+  } else {
+    router.push('/')
+  }
 }
 
 // 이미지 로드 에러 처리
@@ -293,12 +309,26 @@ const handleImageError = (e) => {
 
 <style scoped>
 .create-study-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  background-color: #fbf9f8;
+  background-color: #faf7f5;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.card {
   border-radius: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background-color: #fbf9f8;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-body {
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
 }
 
 .page-title {
@@ -388,6 +418,7 @@ textarea {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e3d8ce;
+  flex-shrink: 0;
 }
 
 .cancel-btn {
@@ -580,9 +611,13 @@ input[type="file"]::file-selector-button:hover {
   border-color: #c4b5a5;
 }
 
-@media (max-width: 768px) {
-  .create-study-container {
-    padding: 1.5rem;
+@media (max-width: 576px) {
+  .card-body {
+    padding: 0.75rem;
+  }
+
+  .card {
+    max-height: 95vh;
   }
 
   .page-title {
