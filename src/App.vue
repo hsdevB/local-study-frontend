@@ -43,22 +43,34 @@ const handleHeaderReset = () => {
 </script>
 
 <style>
-body {
+html, body {
   margin: 0;
   padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
   background-color: #faf7f5;
-  min-height: 100vh;
 }
 
 .app-container {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: #faf7f5;
+  overflow: hidden;
 }
 
 /* router-view가 있는 영역이 남은 공간을 모두 차지하도록 설정 */
 .app-container > :nth-child(2) {
   flex: 1;
+  overflow: hidden;
+}
+
+/* 스크롤이 필요한 컨테이너에 대한 스타일 */
+.scrollable {
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 </style>

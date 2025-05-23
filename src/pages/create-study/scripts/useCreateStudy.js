@@ -11,7 +11,7 @@ export const useCreateStudy = () => {
     content: '',
     startDate: '',
     endDate: '',
-    maxMembers: 2,
+    maxMembers: 1,
     thumbnail: null
   })
 

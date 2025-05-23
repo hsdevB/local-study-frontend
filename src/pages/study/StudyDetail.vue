@@ -27,29 +27,29 @@
             </div>
           </div>
         </template>
-        <template v-else>
-          <div class="user-profile">
-            <div class="profile-badge">
-              <router-link to="/mypage?tab=profile" class="username-link">
-                <h3 class="username">{{ username }} 님</h3>
-              </router-link>
-            </div>
-            <div class="user-stats">
-              <router-link to="/mypage?tab=applied" class="stat-item">
-                <span class="stat-value">0</span>
-                <span class="stat-label">신청 스터디</span>
-              </router-link>
-              <router-link to="/mypage?tab=created" class="stat-item">
-                <span class="stat-value">0</span>
-                <span class="stat-label">운영 스터디</span>
-              </router-link>
-            </div>
-            <div class="user-actions">
-              <router-link to="/mypage" class="menu-item">마이페이지</router-link>
-              <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
-            </div>
-          </div>
-        </template>
+      </div>
+
+      <!-- 사용자 프로필 -->
+      <div v-if="isLoggedIn" class="user-profile">
+        <div class="profile-badge">
+          <router-link to="/mypage?tab=profile" class="username-link">
+            <h3 class="username">{{ username }} 님</h3>
+          </router-link>
+        </div>
+        <div class="user-stats">
+          <router-link to="/mypage?tab=applied" class="stat-item">
+            <span class="stat-value">{{ appliedStudies.length }}</span>
+            <span class="stat-label">신청 스터디</span>
+          </router-link>
+          <router-link to="/mypage?tab=created" class="stat-item">
+            <span class="stat-value">{{ createdStudies.length }}</span>
+            <span class="stat-label">운영 스터디</span>
+          </router-link>
+        </div>
+        <div class="user-actions">
+          <router-link to="/mypage" class="menu-item">마이페이지</router-link>
+          <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
+        </div>
       </div>
     </aside>
 
@@ -74,13 +74,16 @@
               decoding="async" 
               fetchpriority="high"
               width="800"
-              height="400"
+              height="480"
               sizes="(max-width: 768px) 100vw, 50vw"
             >
           </div>
           <!-- 참여자 목록 -->
           <div class="participants-section">
-            <h3>참여자 목록</h3>
+            <div class="participants-header">
+              <h3>참여자 목록</h3>
+              <span class="participants-count">{{ study.participants?.length || 0 }}/{{ study.maxMembers }}명</span>
+            </div>
             <ul class="participants-list">
               <li v-for="participant in study.participants" :key="participant.id" class="participant-item">
                 <span class="participant-name">{{ participant.name }}</span>
@@ -92,160 +95,75 @@
 
         <!-- 우측 영역 -->
         <div class="right-section">
-          <form v-if="isEditing" class="create-study-form" @submit.prevent="saveChanges">
-            <div class="form-group">
-              <label for="title">스터디 제목</label>
-              <input 
-                type="text" 
-                id="title" 
-                v-model="editedStudy.title" 
-                required 
-                placeholder="스터디 제목을 입력하세요"
-              >
+          <div class="form-group title-category-group">
+            <div class="content-title">
+              {{ study.title }}
             </div>
-            <div class="form-group">
-              <label for="category">카테고리</label>
-              <select id="category" v-model="selectedCategory.id" class="form-select" disabled>
-                <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="content">스터디 내용</label>
-              <textarea 
-                id="content" 
-                v-model="editedStudy.content" 
-                required 
-                placeholder="스터디에 대한 설명을 입력하세요"
-                rows="5"
-              ></textarea>
-            </div>
-            <div class="form-group">
-              <label>스터디 지역</label>
-              <div class="location-selector">
-                <div class="location-dropdowns">
-                  <select v-model="selectedSido" @change="handleSidoChange" class="form-select" required>
-                    <option value="">시/도 선택</option>
-                    <option v-for="sido in sidoList" :key="sido" :value="sido">{{ sido }}</option>
-                  </select>
-                  <select v-model="selectedSigungu" @change="handleSigunguChange" class="form-select" :disabled="!selectedSido" required>
-                    <option value="">시/군/구 선택</option>
-                    <option v-for="sigungu in sigunguList" :key="sigungu" :value="sigungu">{{ sigungu }}</option>
-                  </select>
-                  <select v-model="selectedDong" class="form-select" :disabled="!selectedSigungu" required>
-                    <option value="">읍/면/동 선택</option>
-                    <option v-for="dong in dongList" :key="dong" :value="dong">{{ dong }}</option>
-                  </select>
-                </div>
+            <div class="category-members-group">
+              <div class="content-category">
+                {{ selectedCategory?.name }}
               </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="startDate">시작일</label>
-                <input 
-                  type="date" 
-                  id="startDate" 
-                  v-model="editedStudy.startDate" 
-                  required
-                  class="date-input"
-                >
-              </div>
-              <div class="form-group">
-                <label for="endDate">종료일</label>
-                <input 
-                  type="date" 
-                  id="endDate" 
-                  v-model="editedStudy.endDate" 
-                  required
-                  class="date-input"
-                >
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="maxMembers">최대 인원수</label>
-              <input 
-                type="number" 
-                id="maxMembers" 
-                v-model="editedStudy.maxMembers" 
-                required 
-                min="2" 
-                max="20"
-                class="number-input"
-              >
-            </div>
-            <div class="form-actions">
-              <button type="button" class="cancel-btn" @click="cancelEditing">취소</button>
-              <button type="submit" class="submit-btn">저장하기</button>
-            </div>
-          </form>
-          <div v-else class="create-study-form">
-            <div class="form-group">
-              <div class="content-title">{{ study.title }}</div>
-            </div>
-            <div class="form-group">
-              <div class="content-category">{{ selectedCategory?.name }}</div>
-            </div>
-            <div class="form-group">
-              <div class="content-text">{{ study.content }}</div>
-            </div>
-            <div class="form-group">
-              <div class="content-location">
-                <span class="info-label">지역</span>
-                <span class="info-content">
-                  <i class="fas fa-map-marker-alt"></i>
-                  {{ study.location?.sido }} {{ study.location?.sigungu }} {{ study.location?.dong }}
-                </span>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <div class="content-date">
-                  <span class="info-label">기간</span>
-                  <span class="info-content">
-                    <i class="fas fa-calendar-alt"></i>
-                    {{ formatDate(study.startDate) }} ~ {{ formatDate(study.endDate) }}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div class="form-group">
               <div class="content-members">
-                <span class="info-label">인원</span>
+                <span class="info-label">총 인원</span>
                 <span class="info-content">
                   <i class="fas fa-users"></i>
-                  {{ study.currentMembers }} / {{ study.maxMembers }}명
+                  {{ study.maxMembers }}명
                 </span>
               </div>
             </div>
-            <div class="form-actions">
-              <template v-if="isAuthor">
-                <button class="edit-btn" @click="startEditing">수정하기</button>
-                <button class="delete-btn" @click="handleDeleteStudy">삭제하기</button>
-              </template>
-              <template v-else>
-                <button 
-                  v-if="isLoggedIn && !isParticipant" 
-                  class="join-btn"
-                  @click="handleJoinStudy"
-                  :disabled="study.currentMembers >= study.maxMembers"
-                >
-                  참가 신청
-                </button>
-                <button 
-                  v-else-if="isLoggedIn && isParticipant" 
-                  class="leave-btn"
-                  @click="handleLeaveStudy"
-                >
-                  참가 취소
-                </button>
-                <button 
-                  v-else 
-                  class="login-btn"
-                  @click="goToLogin"
-                >
-                  로그인하고 참가하기
-                </button>
-              </template>
+          </div>
+          <div class="form-group">
+            <div class="content-location">
+              <span class="info-label">지역</span>
+              <span class="info-content">
+                <i class="fas fa-map-marker-alt"></i>
+                {{ study.location?.sido }} {{ study.location?.sigungu }} {{ study.location?.dong }}
+              </span>
             </div>
+          </div>
+          <div class="form-group">
+            <div class="content-date">
+              <span class="info-label">기간</span>
+              <span class="info-content">
+                <i class="fas fa-calendar-alt"></i>
+                {{ formatDate(study.startDate) }} ~ {{ formatDate(study.endDate) }}
+              </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="content-text">
+              {{ study.content }}
+            </div>
+          </div>
+          <div class="form-actions">
+            <template v-if="isAuthor">
+              <button type="button" class="edit-btn" @click="startEditing">수정하기</button>
+              <button type="button" class="delete-btn" @click="handleDeleteStudy">삭제하기</button>
+            </template>
+            <template v-else>
+              <button 
+                v-if="isLoggedIn && !isParticipant" 
+                class="join-btn"
+                @click="handleJoinStudy"
+                :disabled="study.currentMembers >= study.maxMembers"
+              >
+                참가 신청
+              </button>
+              <button 
+                v-else-if="isLoggedIn && isParticipant" 
+                class="leave-btn"
+                @click="handleLeaveStudy"
+              >
+                참가 취소
+              </button>
+              <button 
+                v-else 
+                class="login-btn"
+                @click="goToLogin"
+              >
+                로그인하고 참가하기
+              </button>
+            </template>
           </div>
         </div>
       </div>
@@ -270,7 +188,6 @@ const isAuthor = ref(false)
 const selectedSido = ref('')
 const selectedSigungu = ref('')
 const selectedDong = ref('')
-const sidoList = ref(['서울특별시', '부산광역시', '인천광역시', '대구광역시', '대전광역시', '광주광역시', '울산광역시', '세종특별자치시', '경기도', '강원도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도'])
 const sigunguList = ref([])
 const dongList = ref([])
 const isEditing = ref(false)
@@ -281,6 +198,8 @@ const editedStudy = ref({
   endDate: '',
   content: ''
 })
+const appliedStudies = ref([])
+const createdStudies = ref([])
 
 // 날짜 포맷팅 함수
 const formatDate = (dateString) => {
@@ -336,7 +255,7 @@ const fetchStudyDetail = async () => {
       id: route.params.id,
       category_id: 1,
       title: '프로그래밍 스터디',
-      content: '함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.',
+      content: '함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.',
       author: '홍길동',
       currentMembers: 3,
       maxMembers: 5,
@@ -351,7 +270,9 @@ const fetchStudyDetail = async () => {
       participants: [
         { id: 1, name: '홍길동', isAuthor: true },
         { id: 2, name: '김철수', isAuthor: false },
-        { id: 3, name: '이영희', isAuthor: false }
+        { id: 3, name: '이영희', isAuthor: false },
+        { id: 4, name: '이영호', isAuthor: false },
+        { id: 5, name: '이영순', isAuthor: false }
       ]
     }
 
@@ -480,42 +401,6 @@ const startEditing = () => {
   isEditing.value = true
 }
 
-// 수정 취소
-const cancelEditing = () => {
-  isEditing.value = false
-  // 원래 값으로 복원
-  selectedSido.value = study.value.location.sido
-  handleSidoChange()
-  selectedSigungu.value = study.value.location.sigungu
-  handleSigunguChange()
-  selectedDong.value = study.value.location.dong
-}
-
-// 변경사항 저장
-const saveChanges = async () => {
-  try {
-    // TODO: 실제 API 호출로 대체
-    // 임시 데이터 업데이트
-    study.value = {
-      ...study.value,
-      title: editedStudy.value.title,
-      maxMembers: editedStudy.value.maxMembers,
-      startDate: editedStudy.value.startDate,
-      endDate: editedStudy.value.endDate,
-      content: editedStudy.value.content,
-      location: {
-        sido: selectedSido.value,
-        sigungu: selectedSigungu.value,
-        dong: selectedDong.value
-      }
-    }
-    isEditing.value = false
-    alert('변경사항이 저장되었습니다.')
-  } catch (error) {
-    console.error('변경사항 저장 실패:', error)
-  }
-}
-
 // 스터디 삭제 처리
 const handleDeleteStudy = async () => {
   if (!confirm('정말로 이 스터디를 삭제하시겠습니까?')) {
@@ -545,6 +430,32 @@ onMounted(() => {
 onMounted(() => {
   fetchCategories()
   checkLoginStatus()
+  fetchStudyDetail()
+  
+  // 임시 데이터
+  appliedStudies.value = [
+    {
+      id: 3,
+      title: '알고리즘 스터디',
+      content: '코딩 테스트 대비 알고리즘 문제 풀이',
+      thumbnail: 'https://via.placeholder.com/150',
+      currentMembers: 4,
+      maxMembers: 6,
+      applicationStatus: '승인대기'
+    }
+  ]
+
+  createdStudies.value = [
+    {
+      id: 1,
+      title: '프로그래밍 스터디',
+      content: '함께 프로그래밍을 배우고 실력을 향상시켜요!',
+      thumbnail: 'https://via.placeholder.com/150',
+      currentMembers: 3,
+      maxMembers: 5,
+      status: '모집중'
+    }
+  ]
 })
 </script>
 
@@ -563,23 +474,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-}
-
-.categories {
-  flex: 1;
-}
-
-.user-menu {
-  margin-bottom: 2rem;
-}
-
-.user-profile {
-  text-align: center;
-  padding: 1.5rem;
-  background-color: #f5f2ef;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  margin-top: auto;
 }
 
 .sidebar-title {
@@ -622,6 +516,19 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.user-menu {
+  margin-bottom: 2rem;
+}
+
+.user-profile {
+  text-align: center;
+  padding: 1.5rem;
+  background-color: #f5f2ef;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-top: auto;
+}
+
 .user-actions {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
@@ -654,33 +561,26 @@ onMounted(() => {
   background-color: #e3d8ce;
 }
 
-.user-actions .menu-item.signup,
 .user-actions .menu-item.logout {
   background-color: #6f4e37;
   color: white;
 }
 
-.user-actions .menu-item.signup:hover,
 .user-actions .menu-item.logout:hover {
+  background-color: #8b6b4a;
+}
+
+.user-actions .menu-item.signup {
+  background-color: #6f4e37;
+  color: white;
+}
+
+.user-actions .menu-item.signup:hover {
   background-color: #8b6b4a;
 }
 
 .profile-badge {
   margin-bottom: 1.5rem;
-}
-
-.username-link {
-  text-decoration: none;
-  color: inherit;
-  display: block;
-  transition: transform 0.2s ease;
-  padding: 0.5rem;
-  border-radius: 8px;
-}
-
-.username-link:hover {
-  transform: translateY(-2px);
-  background-color: rgba(111, 78, 55, 0.05);
 }
 
 .username {
@@ -725,6 +625,20 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
+.username-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.2s ease;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.username-link:hover {
+  transform: translateY(-2px);
+  background-color: rgba(111, 78, 55, 0.05);
+}
+
 .main-content {
   flex: 1;
   padding: 2rem;
@@ -747,9 +661,11 @@ onMounted(() => {
   gap: 2rem;
   background-color: white;
   border-radius: 12px;
-  padding: 2rem;
+  padding: 2rem 2rem 1rem 2rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: calc(100vh - 220px);
   min-height: 600px;
+  overflow: hidden;
 }
 
 .left-section {
@@ -763,7 +679,7 @@ onMounted(() => {
 
 .thumbnail-section {
   width: 100%;
-  aspect-ratio: 4/3;
+  aspect-ratio: 4/4;
   overflow: hidden;
   border-radius: 8px;
 }
@@ -780,23 +696,43 @@ onMounted(() => {
   padding: 1.5rem;
   border: 1px solid #eee5dd;
   position: absolute;
-  bottom: 0;
+  bottom: 1rem;
   left: 0;
   right: 0;
+  margin-bottom: 0.25rem;
 }
 
-.participants-section h3 {
-  color: #6f4e37;
-  font-size: 1.2rem;
+.participants-section .participants-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #eee5dd;
+}
+
+.participants-section .participants-header h3 {
+  color: #6f4e37;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.participants-section .participants-count {
+  color: #8b6b4a;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background-color: #f5f2ef;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid #eee5dd;
 }
 
 .participants-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  max-height: 130px;
+  overflow-y: auto;
 }
 
 .participant-item {
@@ -817,34 +753,26 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-}
-
-.create-study-form {
-  padding: 2rem;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
 }
 
 .form-group {
   margin-bottom: 0.75rem;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
   color: #4b3621;
   font-weight: 600;
   font-size: 0.95rem;
 }
 
-input[type="text"],
-input[type="number"],
-textarea,
-select {
+.form-input {
   width: 100%;
-  padding: 0.6rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #e3d8ce;
   border-radius: 10px;
   font-size: 0.9rem;
@@ -853,32 +781,56 @@ select {
   transition: all 0.2s ease;
 }
 
-input[type="text"]:hover,
-input[type="number"]:hover,
-textarea:hover,
-select:hover {
+.form-input:hover {
   border-color: #c4b5a5;
   background-color: #fdfbf9;
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus,
-textarea:focus,
-select:focus {
+.form-input:focus {
   outline: none;
   border-color: #6f4e37;
   box-shadow: 0 0 0 2px rgba(111, 78, 55, 0.1);
   background-color: #fff;
 }
 
-textarea {
-  min-height: 100px;
+.form-textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #e3d8ce;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #4b3621;
+  background-color: #fbf9f8;
+  transition: all 0.2s ease;
+  height: 320px;
+  resize: none;
+  margin-bottom: 0.25rem;
+}
+
+.form-textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.form-textarea::-webkit-scrollbar-track {
+  background: #f5f2ef;
+  border-radius: 4px;
+}
+
+.form-textarea::-webkit-scrollbar-thumb {
+  background: #c4b5a5;
+  border-radius: 4px;
+}
+
+.form-textarea::-webkit-scrollbar-thumb:hover {
+  background: #8b6b4a;
 }
 
 .form-row {
   display: flex;
   gap: 1rem;
   margin-bottom: 0.75rem;
+  flex-shrink: 0;
 }
 
 .form-row .form-group {
@@ -890,19 +842,21 @@ textarea {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
   border-top: 1px solid #e3d8ce;
+  flex-shrink: 0;
 }
 
 .cancel-btn {
   padding: 0.75rem 1.5rem;
-  background-color: #f5f2ef;
+  background-color: #eee5dd;
   color: #6f4e37;
   border: 1px solid #e3d8ce;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-weight: 600;
 }
 
 .cancel-btn:hover {
@@ -912,34 +866,44 @@ textarea {
 
 .submit-btn {
   padding: 0.75rem 1.5rem;
-  background-color: #6f4e37;
+  background-color: #8b6b4a;
   color: white;
   border: none;
   border-radius: 10px;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  font-weight: 600;
 }
 
 .submit-btn:hover {
   background-color: #5a3f2e;
 }
 
+.location-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
 .location-dropdowns {
   display: flex;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
 }
 
 .form-select {
   flex: 1;
-  padding: 0.6rem 2.5rem 0.6rem 0.75rem;
+  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
   border: 1px solid #e3d8ce;
   border-radius: 6px;
   font-size: 0.9rem;
   color: #4b3621;
   background-color: #fff;
-  height: 40px;
-  min-height: 40px;
+  height: 36px;
+  min-height: 36px;
   appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f4e37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
@@ -960,9 +924,9 @@ textarea {
   opacity: 0.7;
 }
 
-input[type="date"] {
+.date-input {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.4rem;
   border: 1px solid #e3d8ce;
   border-radius: 6px;
   font-size: 0.9rem;
@@ -970,14 +934,15 @@ input[type="date"] {
   background-color: #fff;
   cursor: pointer;
   transition: all 0.2s ease;
+  height: 36px;
 }
 
-input[type="date"]:hover {
+.date-input:hover {
   border-color: #c4b5a5;
   background-color: #fdfbf9;
 }
 
-input[type="date"]:focus {
+.date-input:focus {
   outline: none;
   border-color: #6f4e37;
   box-shadow: 0 0 0 2px rgba(111, 78, 55, 0.1);
@@ -985,7 +950,7 @@ input[type="date"]:focus {
 
 .number-input {
   width: 80px;
-  padding: 0.5rem;
+  padding: 0.4rem;
   border: 1px solid #e3d8ce;
   border-radius: 6px;
   font-size: 0.9rem;
@@ -993,6 +958,7 @@ input[type="date"]:focus {
   background-color: #fff;
   text-align: center;
   transition: all 0.2s ease;
+  height: 36px;
 }
 
 .number-input:hover {
@@ -1007,9 +973,6 @@ input[type="date"]:focus {
 }
 
 @media (max-width: 768px) {
-  .create-study-form {
-    padding: 1.5rem;
-  }
   .form-group {
     margin-bottom: 0.5rem;
   }
@@ -1037,67 +1000,60 @@ input[type="date"]:focus {
   }
 }
 
+.title-category-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+  width: 100%;
+  border-bottom: 1px solid #eee5dd;
+  padding-bottom: 1rem;
+}
+
+.title-group {
+  flex: 1;
+  max-width: 50%;
+}
+
+.category-members-group {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.category-group {
+  flex: 1;
+}
+
+.members-group {
+  flex: 1;
+}
+
 .content-title {
   font-size: 1.8rem;
   font-weight: 700;
   color: #4b3621;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #eee5dd;
-}
-
-.content-category {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  background-color: #eee5dd;
-  color: #6f4e37;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-}
-
-.content-text {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: #4b3621;
-  white-space: pre-line;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background-color: #fbf9f8;
-  border-radius: 8px;
-  border: 1px solid #eee5dd;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.content-text::-webkit-scrollbar {
-  width: 8px;
-}
-
-.content-text::-webkit-scrollbar-track {
-  background: #f5f2ef;
-  border-radius: 4px;
-}
-
-.content-text::-webkit-scrollbar-thumb {
-  background: #c4b5a5;
-  border-radius: 4px;
-}
-
-.content-text::-webkit-scrollbar-thumb:hover {
-  background: #8b6b4a;
+  flex: 1;
+  max-width: 100%;
+  width: 100%;
+  display: block;
+  padding-bottom: 0;
 }
 
 .content-location,
-.content-date,
-.content-members {
+.content-date {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.5rem;
   font-size: 1rem;
   color: #6f4e37;
-  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  text-align: center;
   padding: 0.5rem 0;
 }
 
@@ -1110,7 +1066,7 @@ input[type="date"]:focus {
 .info-content {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.1rem;
   flex: 1;
 }
 
@@ -1191,5 +1147,179 @@ input[type="date"]:focus {
 
 .delete-btn:hover {
   background-color: #6f4e37;
+}
+
+/* 스크롤바 관련 스타일 수정 */
+.study-detail::-webkit-scrollbar,
+.study-detail::-webkit-scrollbar-track,
+.study-detail::-webkit-scrollbar-thumb,
+.study-detail::-webkit-scrollbar-thumb:hover,
+.right-section::-webkit-scrollbar,
+.right-section::-webkit-scrollbar-track,
+.right-section::-webkit-scrollbar-thumb,
+.right-section::-webkit-scrollbar-thumb:hover {
+  display: none !important;
+}
+
+.title-input {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #4b3621;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-bottom: 2px solid #eee5dd;
+  background-color: transparent;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.title-input:hover {
+  border-color: #c4b5a5;
+  background-color: #fdfbf9;
+}
+
+.title-input:focus {
+  outline: none;
+  border-color: #6f4e37;
+  background-color: #fff;
+}
+
+.form-select {
+  flex: 1;
+  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  border: 1px solid #e3d8ce;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #4b3621;
+  background-color: #fff;
+  height: 36px;
+  min-height: 36px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f4e37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  line-height: 1.2;
+}
+
+.form-select:hover {
+  border-color: #c4b5a5;
+  background-color: #fdfbf9;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #6f4e37;
+  box-shadow: 0 0 0 2px rgba(111, 78, 55, 0.1);
+}
+
+.date-input {
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid #e3d8ce;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #4b3621;
+  background-color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 36px;
+}
+
+.date-input:hover {
+  border-color: #c4b5a5;
+  background-color: #fdfbf9;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #6f4e37;
+  box-shadow: 0 0 0 2px rgba(111, 78, 55, 0.1);
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e3d8ce;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #4b3621;
+  background-color: #fbf9f8;
+  transition: all 0.2s ease;
+  height: 320px;
+  resize: none;
+  margin-bottom: 0.25rem;
+}
+
+.form-textarea:hover {
+  border-color: #c4b5a5;
+  background-color: #fdfbf9;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #6f4e37;
+  box-shadow: 0 0 0 2px rgba(111, 78, 55, 0.1);
+  background-color: #fff;
+}
+
+.form-group::-webkit-scrollbar,
+.form-group::-webkit-scrollbar-track,
+.form-group::-webkit-scrollbar-thumb,
+.form-group::-webkit-scrollbar-thumb:hover {
+  display: none !important;
+}
+
+.form-group + .form-group {
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+}
+
+.content-category {
+  display: inline-block;
+  padding: 0.5rem 0.7rem;
+  background-color: #eee5dd;
+  color: #6f4e37;
+  border-radius: 20px;
+  font-size: 0.87rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: center;
+  min-width: 120px;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+.content-members {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  font-size: 0.87rem;
+  color: #6f4e37;
+  padding: 0.5rem 0.7rem;
+  background-color: #f5f2ef;
+  border-radius: 20px;
+  border: 1px solid #eee5dd;
+  white-space: nowrap;
+  min-width: 120px;
+  height: 36px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.content-text {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #4b3621;
+  white-space: pre-line;
+  margin-bottom: 0.25rem;
+  padding: 1rem;
+  background-color: #fbf9f8;
+  border-radius: 8px;
+  border: 1px solid #eee5dd;
+  height: 320px;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 </style> 
