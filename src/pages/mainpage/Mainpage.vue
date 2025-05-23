@@ -62,17 +62,17 @@
           <div class="location-selector">
             <select v-model="selectedSido" class="form-select" @change="handleSidoChange">
               <option value="">시/도 선택</option>
-              <option v-for="sido in sidoList" :key="sido" :value="sido">{{ sido }}</option>
+              <option v-for="sido in sidoList" :key="sido.id" :value="sido.id">{{ sido.name }}</option>
             </select>
             <h3 style="color: #6f4e37; font-size: 1rem; text-align: center; margin-top: 1px; margin-left: 4px;"> > </h3>
             <select v-model="selectedSigungu" class="form-select" @change="handleSigunguChange" :disabled="!selectedSido">
               <option value="">시/군/구 선택</option>
-              <option v-for="sigungu in sigunguList" :key="sigungu" :value="sigungu">{{ sigungu }}</option>
+              <option v-for="sigungu in sigunguList" :key="sigungu.id" :value="sigungu.id">{{ sigungu.name }}</option>
             </select>
             <h3 style="color: #6f4e37; font-size: 1rem; text-align: center; margin-top: 1px; margin-left: 4px;"> > </h3>
             <select v-model="selectedDong" class="form-select" :disabled="!selectedSigungu">
               <option value="">읍/면/동 선택</option>
-              <option v-for="dong in dongList" :key="dong" :value="dong">{{ dong }}</option>
+              <option v-for="dong in dongList" :key="dong.id" :value="dong.id">{{ dong.name }}</option>
             </select>
           </div>
         </div>
@@ -121,6 +121,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import logoImage from '@/assets/logo.png'
+import axios from 'axios'
 
 const router = useRouter()
 const route = useRoute()
@@ -134,30 +135,9 @@ const searchQuery = ref('')
 const selectedSido = ref('')
 const selectedSigungu = ref('')
 const selectedDong = ref('')
-const sidoList = ref(['서울특별시', '부산광역시', '인천광역시', '대구광역시', '대전광역시', '광주광역시', '울산광역시', '세종특별자치시', '경기도', '강원도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도'])
+const sidoList = ref([])
 const sigunguList = ref([])
 const dongList = ref([])
-
-// 지역 데이터 매핑
-const locationData = {
-  '서울특별시': {
-    '강남구': ['역삼동', '서초동', '청담동', '삼성동', '대치동', '신사동', '논현동', '압구정동'],
-    '서초구': ['서초동', '반포동', '잠원동', '우면동', '양재동'],
-    '송파구': ['잠실동', '문정동', '방이동', '송파동', '가락동'],
-    '마포구': ['홍대입구', '신촌', '합정동', '망원동', '상암동'],
-    '강서구': ['화곡동', '발산동', '가양동', '공항동', '오곡동']
-  },
-  '부산광역시': {
-    '해운대구': ['우동', '중동', '송정동', '반여동', '재송동'],
-    '남구': ['대연동', '용호동', '문현동', '우암동'],
-    '동래구': ['명륜동', '복천동', '칠산동', '낙민동']
-  },
-  '인천광역시': {
-    '남동구': ['구월동', '간석동', '만수동', '수산동'],
-    '연수구': ['송도동', '연수동', '옥련동', '동춘동']
-  }
-  // 다른 지역 데이터는 필요에 따라 추가
-}
 
 // 스터디 목록 관련 상태
 const studies = ref([])
@@ -327,15 +307,8 @@ const filteredStudies = computed(() => {
 // 카테고리 데이터 가져오기
 const fetchCategories = async () => {
   try {
-    // TODO: 실제 API 호출로 대체
-    // 임시 데이터
-    categories.value = [
-      { id: 1, name: '프로그래밍' },
-      { id: 2, name: '디자인' },
-      { id: 3, name: '마케팅' },
-      { id: 4, name: '비즈니스' },
-      { id: 5, name: '언어' }
-    ]
+    const res = await axios.get('http://localhost:3000/category')
+    categories.value = res.data.data
     // 기본 카테고리 선택
     if (categories.value.length > 0) {
       selectedCategory.value = categories.value[0]
@@ -372,17 +345,50 @@ const checkLoginStatus = () => {
 }
 
 // 지역 선택 핸들러
-const handleSidoChange = () => {
+const handleSidoChange = async () => {
   selectedSigungu.value = ''
   selectedDong.value = ''
-  sigunguList.value = selectedSido.value ? Object.keys(locationData[selectedSido.value] || {}) : []
+  sigunguList.value = []
+  dongList.value = []
+  if (selectedSido.value) {
+    await fetchSigunguList(selectedSido.value)
+  }
 }
 
-const handleSigunguChange = () => {
+const handleSigunguChange = async () => {
   selectedDong.value = ''
-  dongList.value = selectedSido.value && selectedSigungu.value 
-    ? (locationData[selectedSido.value]?.[selectedSigungu.value] || [])
-    : []
+  dongList.value = []
+  if (selectedSido.value && selectedSigungu.value) {
+    await fetchDongList(selectedSigungu.value)
+  }
+}
+
+// 지역 데이터 가져오기
+const fetchSidoList = async () => {
+  try {
+    const res = await axios.get('http://localhost:3000/city')
+    sidoList.value = res.data.data
+  } catch (e) {
+    console.error('시/도 목록 불러오기 실패', e)
+  }
+}
+
+const fetchSigunguList = async (cityId) => {
+  try {
+    const res = await axios.get(`http://localhost:3000/district/${cityId}`)
+    sigunguList.value = res.data.data
+  } catch (e) {
+    console.error('시/군/구 목록 불러오기 실패', e)
+  }
+}
+
+const fetchDongList = async (districtId) => {
+  try {
+    const res = await axios.get(`http://localhost:3000/town/${districtId}`)
+    dongList.value = res.data.data
+  } catch (e) {
+    console.error('읍/면/동 목록 불러오기 실패', e)
+  }
 }
 
 // 스터디 목록 가져오기
@@ -669,7 +675,8 @@ onMounted(() => {
   fetchCategories()
   checkLoginStatus()
   fetchStudies()
-  processSearchQuery() // URL 쿼리 파라미터 처리
+  fetchSidoList() // 시/도 목록 가져오기 추가
+  processSearchQuery()
   
   // 임시 데이터
   appliedStudies.value = [

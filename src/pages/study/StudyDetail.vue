@@ -161,15 +161,15 @@
                 <div v-else class="location-dropdowns">
                   <select v-model="editedStudy.sido" @change="handleSidoChange" class="form-select" required>
                     <option value="">시/도 선택</option>
-                    <option v-for="sido in sidoList" :key="sido" :value="sido">{{ sido }}</option>
+                    <option v-for="sido in sidoList" :key="sido.id" :value="sido.id">{{ sido.name }}</option>
                   </select>
                   <select v-model="editedStudy.sigungu" @change="handleSigunguChange" class="form-select" :disabled="!editedStudy.sido" required>
                     <option value="">시/군/구 선택</option>
-                    <option v-for="sigungu in sigunguList" :key="sigungu" :value="sigungu">{{ sigungu }}</option>
+                    <option v-for="sigungu in sigunguList" :key="sigungu.id" :value="sigungu.id">{{ sigungu.name }}</option>
                   </select>
                   <select v-model="editedStudy.dong" class="form-select" :disabled="!editedStudy.sigungu" required>
                     <option value="">읍/면/동 선택</option>
-                    <option v-for="dong in dongList" :key="dong" :value="dong">{{ dong }}</option>
+                    <option v-for="dong in dongList" :key="dong.id" :value="dong.id">{{ dong.name }}</option>
                   </select>
                 </div>
               </span>
@@ -276,6 +276,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import logoImage from '@/assets/logo.png'
+import axios from 'axios'
 
 const router = useRouter()
 const route = useRoute()
@@ -322,38 +323,23 @@ const formatDate = (dateString) => {
   })
 }
 
-// 지역 데이터 매핑
-const locationData = {
-  '서울특별시': {
-    '강남구': ['역삼동', '서초동', '청담동', '삼성동', '대치동', '신사동', '논현동', '압구정동'],
-    '서초구': ['서초동', '반포동', '잠원동', '우면동', '양재동'],
-    '송파구': ['잠실동', '문정동', '방이동', '송파동', '가락동'],
-    '마포구': ['홍대입구', '신촌', '합정동', '망원동', '상암동'],
-    '강서구': ['화곡동', '발산동', '가양동', '공항동', '오곡동']
-  },
-  '부산광역시': {
-    '해운대구': ['우동', '중동', '송정동', '반여동', '재송동'],
-    '남구': ['대연동', '용호동', '문현동', '우암동'],
-    '동래구': ['명륜동', '복천동', '칠산동', '낙민동']
-  },
-  '인천광역시': {
-    '남동구': ['구월동', '간석동', '만수동', '수산동'],
-    '연수구': ['송도동', '연수동', '옥련동', '동춘동']
+// 지역 선택 핸들러
+const handleSidoChange = async () => {
+  editedStudy.value.sigungu = ''
+  editedStudy.value.dong = ''
+  sigunguList.value = []
+  dongList.value = []
+  if (editedStudy.value.sido) {
+    await fetchSigunguList(editedStudy.value.sido)
   }
 }
 
-// 지역 선택 핸들러
-const handleSidoChange = () => {
-  selectedSigungu.value = ''
-  selectedDong.value = ''
-  sigunguList.value = selectedSido.value ? Object.keys(locationData[selectedSido.value] || {}) : []
-}
-
-const handleSigunguChange = () => {
-  selectedDong.value = ''
-  dongList.value = selectedSido.value && selectedSigungu.value 
-    ? (locationData[selectedSido.value]?.[selectedSigungu.value] || [])
-    : []
+const handleSigunguChange = async () => {
+  editedStudy.value.dong = ''
+  dongList.value = []
+  if (editedStudy.value.sigungu) {
+    await fetchDongList(editedStudy.value.sigungu)
+  }
 }
 
 // 스터디 상세 정보 가져오기
@@ -365,7 +351,7 @@ const fetchStudyDetail = async () => {
       id: route.params.id,
       category_id: 1,
       title: '프로그래밍 스터디',
-      content: '함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.',
+      content: '함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.',
       author: '홍길동',
       currentMembers: 3,
       maxMembers: 5,
@@ -411,15 +397,8 @@ const fetchStudyDetail = async () => {
 // 카테고리 데이터 가져오기
 const fetchCategories = async () => {
   try {
-    // TODO: 실제 API 호출로 대체
-    // 임시 데이터
-    categories.value = [
-      { id: 1, name: '프로그래밍' },
-      { id: 2, name: '디자인' },
-      { id: 3, name: '마케팅' },
-      { id: 4, name: '비즈니스' },
-      { id: 5, name: '언어' }
-    ]
+    const res = await axios.get('http://localhost:3000/category')
+    categories.value = res.data.data
     
     // 스터디 정보를 가져온 후 카테고리 선택
     await fetchStudyDetail()
@@ -501,15 +480,14 @@ const startEditing = () => {
     startDate: study.value.startDate,
     endDate: study.value.endDate,
     content: study.value.content,
-    sido: study.value.location?.sido || '',
-    sigungu: study.value.location?.sigungu || '',
-    dong: study.value.location?.dong || '',
+    sido: study.value.sido || '',
+    sigungu: study.value.sigungu || '',
+    dong: study.value.dong || '',
     thumbnail: study.value.thumbnail
   }
   originalThumbnail.value = study.value.thumbnail
   thumbnailDeleted.value = false
   originalParticipants.value = JSON.parse(JSON.stringify(study.value.participants))
-  sidoList.value = Object.keys(locationData)
   isEditing.value = true
 }
 
@@ -612,7 +590,7 @@ onMounted(() => {
 })
 
 onMounted(() => {
-  sidoList.value = Object.keys(locationData)
+  fetchSidoList()
   fetchCategories()
   checkLoginStatus()
   fetchStudyDetail()
@@ -669,6 +647,34 @@ const kickParticipant = (participant) => {
     // TODO: 실제 추방 API 연동
     study.value.participants = study.value.participants.filter(p => p.id !== participant.id)
     alert(`${participant.name}님이 추방되었습니다.`)
+  }
+}
+
+const fetchSidoList = async () => {
+  try {
+    const res = await axios.get('http://localhost:3000/city')
+    sidoList.value = res.data.data;
+    console.log('시/도 목록:', JSON.stringify(sidoList.value, null, 2));
+  } catch (e) {
+    console.error('시/도 목록 불러오기 실패', e)
+  }
+}
+
+const fetchSigunguList = async (cityId) => {
+  try {
+    const res = await axios.get(`http://localhost:3000/district/${cityId}`)
+    sigunguList.value = res.data.data
+  } catch (e) {
+    console.error('시/군/구 목록 불러오기 실패', e)
+  }
+}
+
+const fetchDongList = async (districtId) => {
+  try {
+    const res = await axios.get(`http://localhost:3000/town/${districtId}`)
+    dongList.value = res.data.data
+  } catch (e) {
+    console.error('읍/면/동 목록 불러오기 실패', e)
   }
 }
 </script>
