@@ -63,7 +63,7 @@
                 </div>
                 <img 
                   v-show="!study.isImageLoading"
-                  :src="study.thumbnail || logoImage" 
+                  :src="study.StudyThumbnails?.[0]?.path || logoImage" 
                   :alt="study.title" 
                   loading="lazy" 
                   decoding="async" 
@@ -130,7 +130,7 @@
                 </div>
                 <img 
                   v-show="!study.isImageLoading"
-                  :src="study.thumbnail || logoImage" 
+                  :src="study.StudyThumbnails?.[0]?.path || logoImage" 
                   :alt="study.title" 
                   loading="lazy" 
                   decoding="async" 
