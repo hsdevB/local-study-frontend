@@ -281,6 +281,8 @@ const thumbnailDeleted = ref(false)
 const fileInput = ref(null)
 const originalParticipants = ref([])
 const isImageLoading = ref(true)
+const errorMessage = ref('')
+errorMessage.value = ''
 
 // 날짜 포맷팅 함수
 const formatDate = (dateString) => {
@@ -322,13 +324,11 @@ watch(() => study.value?.thumbnail, () => {
 
 // 이미지 로드 핸들러
 const handleImageLoad = () => {
-  console.log('Image loaded')
   isImageLoading.value = false
 }
 
 // 이미지 에러 핸들러
 const handleImageError = () => {
-  console.log('Image load error')
   isImageLoading.value = false
   // 이미지 로드 실패 시 기본 이미지로 대체
   study.value.thumbnail = logoImage
@@ -401,7 +401,7 @@ const fetchStudyDetail = async () => {
     // 일반 스터디인 경우
     const foundStudy = mockStudies.studies.find(s => s.id === studyId)
     if (!foundStudy) {
-      console.error('스터디를 찾을 수 없습니다:', studyId)
+      errorMessage.value = '스터디를 찾을 수 없습니다:' + studyId
       return
     }
 
@@ -454,7 +454,7 @@ const fetchStudyDetail = async () => {
     // 이미지 로딩 상태 초기화
     // isImageLoading.value = !study.value.thumbnail
   } catch (error) {
-    console.error('스터디 상세 정보 로딩 실패:', error)
+    errorMessage.value = error.response?.data?.message || '스터디 상세 정보 로딩 실패'
     isImageLoading.value = false
   }
 }
@@ -469,7 +469,7 @@ const fetchCategories = async () => {
     // 스터디 정보를 가져온 후 카테고리 선택
     await fetchStudyDetail()
   } catch (error) {
-    console.error('카테고리 로딩 실패:', error)
+    errorMessage.value = error.response?.data?.message || '카테고리 목록 불러오기 실패'
   }
 }
 
@@ -516,7 +516,7 @@ const handleJoinStudy = async () => {
     study.value.currentMembers++
     alert('스터디 참가 신청이 완료되었습니다.')
   } catch (error) {
-    console.error('스터디 참가 실패:', error)
+    errorMessage.value = error.response?.data?.message || '스터디 참가 실패'
   }
 }
 
@@ -528,7 +528,7 @@ const handleLeaveStudy = async () => {
     study.value.currentMembers--
     alert('스터디 참가가 취소되었습니다.')
   } catch (error) {
-    console.error('스터디 참가 취소 실패:', error)
+    errorMessage.value = error.response?.data?.message || '스터디 참가 취소 실패'
   }
 }
 
@@ -588,7 +588,7 @@ const handleDeleteStudy = async () => {
     alert('스터디가 삭제되었습니다.')
     router.push('/')
   } catch (error) {
-    console.error('스터디 삭제 실패:', error)
+    errorMessage.value = error.response?.data?.message || '스터디 삭제 실패'
     alert('스터디 삭제에 실패했습니다.')
   }
 }
@@ -611,7 +611,7 @@ const handleUpdateStudy = async () => {
     isEditing.value = false
     alert('스터디 정보가 수정되었습니다.')
   } catch (error) {
-    console.error('스터디 수정 실패:', error)
+    errorMessage.value = error.response?.data?.message || '스터디 수정 실패'
     alert('스터디 수정에 실패했습니다.')
   }
 }
@@ -720,9 +720,8 @@ const fetchSidoList = async () => {
   try {
     const res = await axios.get('http://localhost:3000/city')
     sidoList.value = res.data.data;
-    console.log('시/도 목록:', JSON.stringify(sidoList.value, null, 2));
-  } catch (e) {
-    console.error('시/도 목록 불러오기 실패', e)
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '시/도 목록 불러오기 실패'
   }
 }
 
@@ -730,8 +729,8 @@ const fetchSigunguList = async (cityId) => {
   try {
     const res = await axios.get(`http://localhost:3000/district/${cityId}`)
     sigunguList.value = res.data.data
-  } catch (e) {
-    console.error('시/군/구 목록 불러오기 실패', e)
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '시/군/구 목록 불러오기 실패'
   }
 }
 
@@ -739,8 +738,8 @@ const fetchDongList = async (districtId) => {
   try {
     const res = await axios.get(`http://localhost:3000/town/${districtId}`)
     dongList.value = res.data.data
-  } catch (e) {
-    console.error('읍/면/동 목록 불러오기 실패', e)
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '읍/면/동 목록 불러오기 실패'
   }
 }
 </script>

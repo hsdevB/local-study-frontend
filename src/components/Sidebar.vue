@@ -78,6 +78,8 @@ const isLoggedIn = ref(false)
 const username = ref('')
 const appliedStudies = ref([])
 const createdStudies = ref([])
+const errorMessage = ref('')
+errorMessage.value = ''
 
 // 카테고리 데이터 가져오기
 const fetchCategories = async () => {
@@ -88,14 +90,13 @@ const fetchCategories = async () => {
       emit('update:selectedCategory', categories.value[0])
     }
   } catch (error) {
-    console.error('카테고리 로딩 실패:', error)
+    errorMessage.value = error.response?.data?.message || '카테고리 목록 불러오기 실패'
   }
 }
 
 const fetchUserProfile = async () => {
   try {
     const token = localStorage.getItem('token')
-    console.log('[Sidebar] fetchUserProfile - token:', token)
     if (!token) {
       isLoggedIn.value = false
       return
@@ -110,10 +111,9 @@ const fetchUserProfile = async () => {
       userProfile.value = response.data.data
       isLoggedIn.value = true
       username.value = response.data.data.nickname
-      console.log('[Sidebar] fetchUserProfile success:', response.data.data)
     }
   } catch (error) {
-    console.error('[Sidebar] Failed to fetch user profile:', error)
+    errorMessage.value = error.response?.data?.message || '사용자 정보 불러오기 실패'
     isLoggedIn.value = false
     userProfile.value = null
     username.value = ''
@@ -155,7 +155,7 @@ const logout = async () => {
     username.value = ''
     router.push('/')
   } catch (error) {
-    console.error('Logout failed:', error)
+    errorMessage.value = error.response?.data?.message || '로그아웃 실패'
   }
 }
 
@@ -163,9 +163,6 @@ const logout = async () => {
 onMounted(async () => {
   await fetchCategories()
   await fetchUserProfile()
-  console.log('[Sidebar] isLoggedIn:', isLoggedIn.value)
-  console.log('[Sidebar] userProfile:', userProfile.value)
-  console.log('[Sidebar] categories:', categories.value)
 })
 </script>
 

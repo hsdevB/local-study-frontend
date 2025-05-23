@@ -110,6 +110,9 @@ const dongList = ref([])
 const studies = ref([])
 const currentPage = ref(1)
 
+const errorMessage = ref('')
+errorMessage.value = ''
+
 // 검색어와 문자열의 유사도를 계산하는 함수
 const calculateSimilarity = (str1, str2) => {
   const s1 = str1.toLowerCase()
@@ -157,7 +160,6 @@ const calculateSimilarity = (str1, str2) => {
 
 // 검색어 처리 함수
 const handleSearch = (query) => {
-  console.log('Search query received:', query) // 디버깅용 로그
   searchQuery.value = query
   currentPage.value = 1 // 검색 시 첫 페이지로 이동
 }
@@ -234,8 +236,6 @@ const goToCreateStudy = () => {
 
 // 필터링된 스터디 목록
 const filteredStudies = computed(() => {
-  console.log('[Mainpage] filteredStudies - selectedCategory:', props.selectedCategory)
-  console.log('[Mainpage] filteredStudies - studies:', studies.value)
   if (!props.selectedCategory) return []
   const selectedCategoryId = Number(props.selectedCategory.id)
   let filtered = studies.value.filter(study => {
@@ -257,9 +257,7 @@ const filteredStudies = computed(() => {
 
   // 지역 필터링
   if (selectedSido.value) {
-    console.log('Selected Sido ID:', selectedSido.value) // 디버깅용 로그
     filtered = filtered.filter(study => {
-      console.log('Study City ID:', study.City?.id, 'Selected Sido ID:', selectedSido.value) // 디버깅용 로그
       const matchesSido = study.City?.id === Number(selectedSido.value)
       
       if (selectedSigungu.value) {
@@ -289,7 +287,7 @@ const fetchCategories = async () => {
       emit('update:selectedCategory', categories.value[0])
     }
   } catch (error) {
-    console.error('카테고리 로딩 실패:', error)
+    errorMessage.value = error.response?.data?.message || '카테고리 목록 불러오기 실패'
   }
 }
 
@@ -338,8 +336,8 @@ const fetchSidoList = async () => {
   try {
     const res = await axios.get('http://localhost:3000/city')
     sidoList.value = res.data.data
-  } catch (e) {
-    console.error('시/도 목록 불러오기 실패', e)
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '시/도 목록 불러오기 실패'
   }
 }
 
@@ -347,8 +345,8 @@ const fetchSigunguList = async (cityId) => {
   try {
     const res = await axios.get(`http://localhost:3000/district/${cityId}`)
     sigunguList.value = res.data.data
-  } catch (e) {
-    console.error('시/군/구 목록 불러오기 실패', e)
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '시/군/구 목록 불러오기 실패'
   }
 }
 
@@ -356,15 +354,14 @@ const fetchDongList = async (districtId) => {
   try {
     const res = await axios.get(`http://localhost:3000/town/${districtId}`)
     dongList.value = res.data.data
-  } catch (e) {
-    console.error('읍/면/동 목록 불러오기 실패', e)
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '읍/면/동 목록 불러오기 실패'
   }
 }
 
 // 스터디 목록 가져오기
 const fetchStudies = async () => {
   try {
-    console.log('[Mainpage] Fetching studies...')
     const response = await axios.get('http://localhost:3000/study')
     if (response.data.success) {
       studies.value = response.data.data.map(study => {
@@ -383,12 +380,11 @@ const fetchStudies = async () => {
           isImageLoading: true
         }
       })
-      console.log('[Mainpage] Studies fetched:', studies.value)
     } else {
-      console.error('[Mainpage] Failed to fetch studies:', response.data.message)
+      errorMessage.value = response.data.message || '스터디 목록 불러오기 실패'
     }
   } catch (error) {
-    console.error('[Mainpage] 스터디 목록 로딩 실패:', error)
+    errorMessage.value = error.response?.data?.message || '스터디 목록 불러오기 실패'
   }
 }
 
@@ -435,9 +431,6 @@ onMounted(async () => {
   await fetchStudies()
   await fetchSidoList()
   processSearchQuery()
-  console.log('[Mainpage] selectedCategory:', props.selectedCategory)
-  console.log('[Mainpage] categories:', categories.value)
-  console.log('[Mainpage] studies:', studies.value)
   
   // 임시 데이터
   appliedStudies.value = [

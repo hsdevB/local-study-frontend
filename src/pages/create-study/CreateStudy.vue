@@ -164,6 +164,8 @@ import axios from 'axios'
 
 const router = useRouter()
 const { formData, handleSubmit, handleThumbnailChange, thumbnailPreview } = useCreateStudy()
+const errorMessage = ref('')
+errorMessage.value = ''
 
 // formData 초기화
 formData.value = {
@@ -180,7 +182,7 @@ const fetchCategories = async () => {
     const res = await axios.get('http://localhost:3000/category')
     categories.value = res.data.data
   } catch (error) {
-    console.error('카테고리 로딩 실패:', error)
+    errorMessage.value = error.response?.data?.message || '카테고리 목록 불러오기 실패'
   }
 }
 
@@ -205,8 +207,8 @@ const fetchSidoList = async () => {
   try {
     const res = await axios.get('http://localhost:3000/city')
     sidoList.value = res.data.data
-  } catch (e) {
-    console.error('시/도 목록 불러오기 실패', e)
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '시/도 목록 불러오기 실패'
   }
 }
 
@@ -215,8 +217,8 @@ const fetchSigunguList = async (cityId) => {
   try {
     const res = await axios.get(`http://localhost:3000/district/${cityId}`)
     sigunguList.value = res.data.data
-  } catch (e) {
-    console.error('시/군/구 목록 불러오기 실패', e)
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '시/군/구 목록 불러오기 실패'
   }
 }
 
@@ -225,8 +227,8 @@ const fetchDongList = async (districtId) => {
   try {
     const res = await axios.get(`http://localhost:3000/town/${districtId}`)
     dongList.value = res.data.data
-  } catch (e) {
-    console.error('읍/면/동 목록 불러오기 실패', e)
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '읍/면/동 목록 불러오기 실패'
   }
 }
 

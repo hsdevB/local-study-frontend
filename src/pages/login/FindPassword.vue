@@ -78,8 +78,7 @@ const findPassword = async () => {
     alert('입력하신 이메일로 비밀번호 재설정 링크를 발송했습니다.')
     router.push('/login')
   } catch (error) {
-    console.error('비밀번호 찾기 실패:', error)
-    errorMessage.value = '비밀번호 찾기에 실패했습니다. 다시 시도해주세요.'
+    errorMessage.value = error.response?.data?.message || '비밀번호 찾기에 실패했습니다. 다시 시도해주세요.'
   }
 }
 </script>

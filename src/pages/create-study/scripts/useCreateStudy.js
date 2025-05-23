@@ -66,7 +66,6 @@ export const useCreateStudy = () => {
         throw new Error(response.data.message || '스터디 생성에 실패했습니다.')
       }
     } catch (error) {
-      console.error('스터디 생성 실패:', error)
       alert(error.message || '스터디 생성에 실패했습니다.')
     }
   }

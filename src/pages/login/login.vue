@@ -62,7 +62,6 @@ const errorMessage = ref('')
 
 const handleSubmit = async (e) => {
   e.preventDefault()
-  console.log('로그인 함수 호출됨', userId.value, password.value);
   errorMessage.value = ''
 
   try {
