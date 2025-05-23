@@ -1,64 +1,6 @@
 <template>
   <div class="page-wrapper">
-    <Header />
     <div class="mypage-container">
-      <!-- 사이드바 -->
-      <aside class="sidebar">
-        <!-- 카테고리 목록 -->
-        <div class="categories">
-          <h5 class="sidebar-title">마이 페이지</h5>
-          <ul class="category-list">
-            <li class="category-item" :class="{ 'selected': activeMenu === 'applied' }">
-              <a href="#" @click.prevent="activeMenu = 'applied'">신청한 스터디</a>
-            </li>
-            <li class="category-item" :class="{ 'selected': activeMenu === 'created' }">
-              <a href="#" @click.prevent="activeMenu = 'created'">내가 만든 스터디</a>
-            </li>
-            <li class="category-item" :class="{ 'selected': activeMenu === 'profile' }">
-              <a href="#" @click.prevent="activeMenu = 'profile'">내 정보 수정</a>
-            </li>
-          </ul>
-        </div>
-
-        <!-- 사용자 메뉴 -->
-        <div class="user-menu">
-          <template v-if="!isLoggedIn">
-            <div class="user-profile">
-              <div class="user-actions no-border">
-                <router-link to="/login" class="menu-item">로그인</router-link>
-                <router-link to="/signup" class="menu-item signup">회원가입</router-link>
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <!-- 사용자 프로필 -->
-        <div v-if="isLoggedIn" class="user-profile">
-          <div class="profile-badge">
-            <router-link to="/mypage?tab=profile" class="username-link">
-              <h3 class="username">{{ username }} 님</h3>
-            </router-link>
-          </div>
-          <div class="user-stats">
-            <router-link to="/mypage?tab=applied" class="stat-item">
-              <span class="stat-value">{{ appliedStudies.length }}</span>
-              <span class="stat-label">신청 스터디</span>
-            </router-link>
-            <router-link to="/mypage?tab=created" class="stat-item">
-              <span class="stat-value">{{ createdStudies.length }}</span>
-              <span class="stat-label">운영 스터디</span>
-            </router-link>
-          </div>
-          <div class="user-actions">
-            <button class="menu-item" @click="goBack">
-              <i class="fas fa-arrow-left"></i>
-              뒤로가기
-            </button>
-            <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
-          </div>
-        </div>
-      </aside>
-
       <!-- 메인 콘텐츠 영역 -->
       <main class="main-content">
         <!-- 내 정보 수정 -->
@@ -116,7 +58,11 @@
           <div class="study-list">
             <div v-for="study in filteredCreatedStudies" :key="study.id" class="study-card" @click="goToStudyDetail(study.id)">
               <div class="study-thumbnail">
+                <div v-show="study.isImageLoading" class="study-thumbnail-skeleton">
+                  <div class="skeleton-content"></div>
+                </div>
                 <img 
+                  v-show="!study.isImageLoading"
                   :src="study.thumbnail || logoImage" 
                   :alt="study.title" 
                   loading="lazy" 
@@ -125,6 +71,8 @@
                   width="400"
                   height="300"
                   sizes="(max-width: 768px) 100vw, 25vw"
+                  @load="handleImageLoad(study)"
+                  @error="handleImageError(study)"
                 >
               </div>
               <div class="study-info">
@@ -177,7 +125,22 @@
           <div class="study-list">
             <div v-for="study in filteredAppliedStudies" :key="study.id" class="study-card" @click="goToStudyDetail(study.id)">
               <div class="study-thumbnail">
-                <img :src="study.thumbnail || logoImage" :alt="study.title" loading="lazy" decoding="async" fetchpriority="high">
+                <div v-show="study.isImageLoading" class="study-thumbnail-skeleton">
+                  <div class="skeleton-content"></div>
+                </div>
+                <img 
+                  v-show="!study.isImageLoading"
+                  :src="study.thumbnail || logoImage" 
+                  :alt="study.title" 
+                  loading="lazy" 
+                  decoding="async" 
+                  fetchpriority="high"
+                  width="400"
+                  height="300"
+                  sizes="(max-width: 768px) 100vw, 25vw"
+                  @load="handleImageLoad(study)"
+                  @error="handleImageError(study)"
+                >
               </div>
               <div class="study-info">
                 <h3 class="study-title">{{ study.title }}</h3>
@@ -198,14 +161,11 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import Header from '@/components/Header.vue'
 import logoImage from '@/assets/logo.png'
 
 const router = useRouter()
 const route = useRoute()
 const activeMenu = ref('applied')
-const username = ref('홍길동') // TODO: 실제 사용자 이름으로 대체
-const isLoggedIn = ref(true)
 
 // URL의 tab 파라미터에 따라 메뉴 활성화
 watch(() => route.query.tab, (newTab) => {
@@ -263,18 +223,24 @@ const updateProfile = () => {
 
 // 스터디 상세 페이지로 이동
 const goToStudyDetail = (studyId) => {
-  router.push(`/study/${studyId}`)
-}
+  const study = [...createdStudies.value, ...appliedStudies.value].find(s => s.id === studyId)
+  if (!study) return
 
-// 뒤로가기 함수
-const goBack = () => {
-  router.back()
-}
-
-// 로그아웃 함수
-const logout = () => {
-  // TODO: 로그아웃 로직 구현
-  alert('로그아웃되었습니다.')
+  if (activeMenu.value === 'applied') {
+    router.push({
+      path: `/study/${studyId}`,
+      query: { tab: 'applied' }
+    })
+  } else if (activeMenu.value === 'created') {
+    router.push({
+      path: `/study/${studyId}`,
+      query: { tab: 'created' }
+    })
+  } else {
+    router.push({
+      path: `/study/${studyId}`
+    })
+  }
 }
 
 // 초기 데이터 로드
@@ -295,7 +261,8 @@ onMounted(() => {
       thumbnail: 'https://picsum.photos/400/300',
       currentMembers: 3,
       maxMembers: 5,
-      status: '모집중'
+      status: '모집중',
+      isImageLoading: true
     },
     {
       id: 2,
@@ -304,7 +271,8 @@ onMounted(() => {
       thumbnail: 'https://picsum.photos/400/301',
       currentMembers: 5,
       maxMembers: 5,
-      status: '모집완료'
+      status: '모집완료',
+      isImageLoading: true
     }
   ]
 
@@ -316,7 +284,8 @@ onMounted(() => {
       thumbnail: 'https://picsum.photos/400/302',
       currentMembers: 4,
       maxMembers: 6,
-      applicationStatus: '승인대기'
+      applicationStatus: '승인대기',
+      isImageLoading: true
     },
     {
       id: 4,
@@ -325,7 +294,8 @@ onMounted(() => {
       thumbnail: 'https://picsum.photos/400/303',
       currentMembers: 3,
       maxMembers: 4,
-      applicationStatus: '승인'
+      applicationStatus: '승인',
+      isImageLoading: true
     },
     {
       id: 5,
@@ -334,7 +304,8 @@ onMounted(() => {
       thumbnail: 'https://picsum.photos/400/304',
       currentMembers: 6,
       maxMembers: 6,
-      applicationStatus: '거절'
+      applicationStatus: '거절',
+      isImageLoading: true
     }
   ]
 
@@ -344,7 +315,38 @@ onMounted(() => {
   link.as = 'image'
   link.href = logoImage
   document.head.appendChild(link)
+
+  // 이미지 사전 로드
+  const preloadImages = (studies) => {
+    studies.forEach(study => {
+      if (study.thumbnail) {
+        const img = new Image()
+        img.onload = () => {
+          study.isImageLoading = false
+        }
+        img.onerror = () => {
+          study.isImageLoading = false
+          study.thumbnail = logoImage
+        }
+        img.src = study.thumbnail
+      }
+    })
+  }
+
+  preloadImages(createdStudies.value)
+  preloadImages(appliedStudies.value)
 })
+
+// 이미지 로드 핸들러
+const handleImageLoad = (study) => {
+  study.isImageLoading = false
+}
+
+// 이미지 에러 핸들러
+const handleImageError = (study) => {
+  study.isImageLoading = false
+  study.thumbnail = logoImage
+}
 </script>
 
 <style scoped>
@@ -561,9 +563,9 @@ onMounted(() => {
 }
 
 .content-section {
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
-  padding: 0 1rem;
+  /* padding: 0 1rem; */
 }
 
 .content-header {
@@ -578,6 +580,7 @@ onMounted(() => {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
+  line-height: 1.5;
 }
 
 .study-tabs {
@@ -587,7 +590,7 @@ onMounted(() => {
 }
 
 .tab-btn {
-  padding: 0.5rem 1rem;
+  padding: 0.3rem 1rem;
   border: 1px solid #d4c4b7;
   background-color: transparent;
   color: #4b3621;
@@ -672,6 +675,67 @@ onMounted(() => {
   overflow-y: auto;
   padding-right: 1rem;
   overscroll-behavior: contain;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .study-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .study-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .mypage-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #eee5dd;
+    padding: 1rem;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .content-section {
+    padding: 0;
+  }
+
+  .study-tabs {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-btn {
+    white-space: nowrap;
+  }
+
+  .user-stats {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .stat-item {
+    padding: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 576px) {
+  .study-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .study-list::-webkit-scrollbar {
@@ -711,14 +775,49 @@ onMounted(() => {
 .study-thumbnail {
   width: 100%;
   height: 160px;
+  position: relative;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+.study-thumbnail-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #f5f5f5;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.skeleton-content {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .study-thumbnail img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  z-index: 2;
 }
 
 .study-info {
@@ -797,51 +896,5 @@ onMounted(() => {
 .study-status.거절 {
   background-color: #ffebee;
   color: #c62828;
-}
-
-@media (max-width: 768px) {
-  .mypage-container {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid #eee5dd;
-    padding: 1rem;
-  }
-
-  .main-content {
-    padding: 1rem;
-  }
-
-  .content-section {
-    padding: 0;
-  }
-
-  .study-list {
-    grid-template-columns: 1fr;
-  }
-
-  .study-tabs {
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .tab-btn {
-    white-space: nowrap;
-  }
-
-  .user-stats {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .stat-item {
-    padding: 0.5rem;
-    background-color: rgba(255, 255, 255, 0.5);
-    border-radius: 8px;
-  }
 }
 </style>

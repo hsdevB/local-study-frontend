@@ -11,7 +11,7 @@
           @click="goToMain"
         />
 
-        <form @submit.prevent="handleLogin" class="text-start">
+        <form @submit.prevent="handleSubmit" class="text-start">
           <div class="mb-4">
             <input
               type="text"
@@ -41,6 +41,10 @@
             <router-link to="/find-password" class="text-decoration-none">비밀번호 찾기</router-link>
           </div>
         </form>
+
+        <div v-if="errorMessage" class="mt-3 text-danger">
+          {{ errorMessage }}
+        </div>
       </div>
     </div>
   </div>
@@ -49,16 +53,39 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
+const router = useRouter()
 const userId = ref('')
 const password = ref('')
-const router = useRouter()
+const errorMessage = ref('')
 
-const handleLogin = () => {
-  if (userId.value && password.value) {
-    alert(`로그인 시도: ${userId.value}`)
-  } else {
-    alert('아이디와 비밀번호를 모두 입력하세요.')
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  console.log('로그인 함수 호출됨', userId.value, password.value);
+  errorMessage.value = ''
+
+  try {
+    const response = await axios.post('http://localhost:3000/user/login', {
+      userId: userId.value,
+      password: password.value
+    }, {
+      withCredentials: true
+    })
+
+    if (response.data.success) {
+      // 토큰 저장
+      if (response.data.data?.token) {
+        localStorage.setItem('token', response.data.data.token)
+      }
+      setTimeout(() => {
+        router.push('/')
+      }, 300)
+    } else {
+      errorMessage.value = response.data.message || '로그인에 실패했습니다.'
+    }
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '로그인 중 오류가 발생했습니다.'
   }
 }
 

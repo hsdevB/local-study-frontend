@@ -1,58 +1,5 @@
 <template>
   <div class="study-detail-container">
-    <!-- 사이드바 -->
-    <aside class="sidebar">
-      <!-- 카테고리 목록 -->
-      <div class="categories">
-        <h5 class="sidebar-title">카테고리</h5>
-        <ul class="category-list">
-          <li 
-            v-for="category in categories" 
-            :key="category.id" 
-            class="category-item"
-            :class="{ 'selected': selectedCategory?.id === category.id }"
-          >
-            <a href="#" @click.prevent="selectCategory(category)">{{ category.name }}</a>
-          </li>
-        </ul>
-      </div>
-
-      <!-- 사용자 메뉴 -->
-      <div class="user-menu">
-        <template v-if="!isLoggedIn">
-          <div class="user-profile">
-            <div class="user-actions no-border">
-              <router-link to="/login" class="menu-item">로그인</router-link>
-              <router-link to="/signup" class="menu-item signup">회원가입</router-link>
-            </div>
-          </div>
-        </template>
-      </div>
-
-      <!-- 사용자 프로필 -->
-      <div v-if="isLoggedIn" class="user-profile">
-        <div class="profile-badge">
-          <router-link to="/mypage?tab=profile" class="username-link">
-            <h3 class="username">{{ username }} 님</h3>
-          </router-link>
-        </div>
-        <div class="user-stats">
-          <router-link to="/mypage?tab=applied" class="stat-item">
-            <span class="stat-value">{{ appliedStudies.length }}</span>
-            <span class="stat-label">신청 스터디</span>
-          </router-link>
-          <router-link to="/mypage?tab=created" class="stat-item">
-            <span class="stat-value">{{ createdStudies.length }}</span>
-            <span class="stat-label">운영 스터디</span>
-          </router-link>
-        </div>
-        <div class="user-actions">
-          <router-link to="/mypage" class="menu-item">마이페이지</router-link>
-          <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
-        </div>
-      </div>
-    </aside>
-
     <!-- 메인 콘텐츠 영역 -->
     <main class="main-content">
       <!-- 상단 영역 -->
@@ -79,7 +26,25 @@
               </div>
             </template>
             <template v-else>
-              <img :src="study.thumbnail || logoImage" :alt="study.title" class="study-thumbnail" loading="lazy" decoding="async" fetchpriority="high" width="800" height="480" sizes="(max-width: 768px) 100vw, 50vw">
+              <div class="thumbnail-container">
+                <div v-show="isImageLoading" class="study-thumbnail-skeleton">
+                  <div class="skeleton-content"></div>
+                </div>
+                <img 
+                  v-show="!isImageLoading"
+                  :src="study.thumbnail || logoImage" 
+                  :alt="study.title" 
+                  class="study-thumbnail" 
+                  loading="lazy" 
+                  decoding="async" 
+                  fetchpriority="high" 
+                  width="800" 
+                  height="480" 
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  @load="handleImageLoad"
+                  @error="handleImageError"
+                >
+              </div>
             </template>
           </div>
           <!-- 참여자 목록 -->
@@ -273,9 +238,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import logoImage from '@/assets/logo.png'
+// import mockStudies from '@/data/mockStudies.json'
+// import mockCategories from '@/data/mockCategories.json'
+// import mockLocations from '@/data/mockLocations.json'
+// import mockAppliedStudies from '@/data/mockAppliedStudies.json'
 import axios from 'axios'
 
 const router = useRouter()
@@ -311,6 +280,7 @@ const originalThumbnail = ref('')
 const thumbnailDeleted = ref(false)
 const fileInput = ref(null)
 const originalParticipants = ref([])
+const isImageLoading = ref(true)
 
 // 날짜 포맷팅 함수
 const formatDate = (dateString) => {
@@ -322,6 +292,9 @@ const formatDate = (dateString) => {
     day: 'numeric'
   })
 }
+
+// 지역 데이터 매핑
+// const locationData = mockLocations.locationData
 
 // 지역 선택 핸들러
 const handleSidoChange = async () => {
@@ -342,61 +315,154 @@ const handleSigunguChange = async () => {
   }
 }
 
+// 이미지 URL이 변경될 때마다 로딩 상태를 초기화
+watch(() => study.value?.thumbnail, () => {
+  isImageLoading.value = true
+})
+
+// 이미지 로드 핸들러
+const handleImageLoad = () => {
+  console.log('Image loaded')
+  isImageLoading.value = false
+}
+
+// 이미지 에러 핸들러
+const handleImageError = () => {
+  console.log('Image load error')
+  isImageLoading.value = false
+  // 이미지 로드 실패 시 기본 이미지로 대체
+  study.value.thumbnail = logoImage
+}
+
 // 스터디 상세 정보 가져오기
 const fetchStudyDetail = async () => {
   try {
+    const studyId = parseInt(route.params.id)
+    const isAppliedStudy = route.query.tab === 'applied'
+    const isCreatedStudy = route.query.tab === 'created'
+    
+    // 이미지 로딩 상태 초기화
+    isImageLoading.value = true
+    
+    // 신청 스터디인 경우
+    if (isAppliedStudy) {
+      const foundStudy = mockAppliedStudies.appliedStudies.find(s => s.id === studyId)
+      if (foundStudy) {
+        study.value = foundStudy
+        // 작성자 여부 확인
+        isAuthor.value = false
+        // 신청 상태에 따라 참여자 여부 설정
+        isParticipant.value = foundStudy.applicationStatus === '승인'
+        
+        // 지역 선택 초기화
+        selectedSido.value = study.value.location.sido
+        handleSidoChange()
+        selectedSigungu.value = study.value.location.sigungu
+        handleSigunguChange()
+        selectedDong.value = study.value.location.dong
+
+        // 카테고리 선택
+        const category = categories.value.find(cat => cat.id === study.value.categoryId)
+        if (category) {
+          selectedCategory.value = category
+        }
+        // 이미지 로딩 상태 초기화
+        isImageLoading.value = !study.value.thumbnail
+        return
+      }
+    }
+    
+    // 운영 스터디인 경우
+    if (isCreatedStudy) {
+      const foundStudy = mockStudies.studies.find(s => s.id === studyId)
+      if (foundStudy) {
+        study.value = foundStudy
+        // 작성자 여부 확인
+        isAuthor.value = true
+        
+        // 지역 선택 초기화
+        selectedSido.value = study.value.location.sido
+        handleSidoChange()
+        selectedSigungu.value = study.value.location.sigungu
+        handleSigunguChange()
+        selectedDong.value = study.value.location.dong
+
+        // 카테고리 선택
+        const category = categories.value.find(cat => cat.id === study.value.categoryId)
+        if (category) {
+          selectedCategory.value = category
+        }
+        // 이미지 로딩 상태 초기화
+        isImageLoading.value = !study.value.thumbnail
+        return
+      }
+    }
+    
+    // 일반 스터디인 경우
+    const foundStudy = mockStudies.studies.find(s => s.id === studyId)
+    if (!foundStudy) {
+      console.error('스터디를 찾을 수 없습니다:', studyId)
+      return
+    }
+
     // TODO: 실제 API 호출로 대체
     // 임시 데이터
-    study.value = {
-      id: route.params.id,
-      category_id: 1,
-      title: '프로그래밍 스터디',
-      content: '함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.',
-      author: '홍길동',
-      currentMembers: 3,
-      maxMembers: 5,
-      startDate: '2024-03-01',
-      endDate: '2024-06-30',
-      thumbnail: 'https://picsum.photos/400/300',
-      location: {
-        sido: '서울특별시',
-        sigungu: '강남구',
-        dong: '역삼동'
-      },
-      participants: [
-        { id: 1, name: '홍길동', isAuthor: true },
-        { id: 2, name: '김철수', isAuthor: false },
-        { id: 3, name: '이영희', isAuthor: false },
-        { id: 4, name: '이영호', isAuthor: false },
-        { id: 5, name: '이영순', isAuthor: false }
-      ]
-    }
+    // study.value = {
+    //   id: route.params.id,
+    //   category_id: 1,
+    //   title: '프로그래밍 스터디',
+    //   content: '함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.함께 프로그래밍을 배우고 실력을 향상시켜요! 이 스터디는 초보자부터 중급자까지 모두 환영합니다. 주 2회 온라인 미팅과 주 1회 오프라인 모임을 통해 서로의 학습을 공유하고 피드백을 주고받습니다.',
+    //   author: '홍길동',
+    //   currentMembers: 3,
+    //   maxMembers: 5,
+    //   startDate: '2024-03-01',
+    //   endDate: '2024-06-30',
+    //   thumbnail: 'https://picsum.photos/400/300',
+    //   location: {
+    //     sido: '서울특별시',
+    //     sigungu: '강남구',
+    //     dong: '역삼동'
+    //   },
+    //   participants: [
+    //     { id: 1, name: '홍길동', isAuthor: true },
+    //     { id: 2, name: '김철수', isAuthor: false },
+    //     { id: 3, name: '이영희', isAuthor: false },
+    //     { id: 4, name: '이영호', isAuthor: false },
+    //     { id: 5, name: '이영순', isAuthor: false }
+    //   ]
+    // }
 
+    // study.value = foundStudy
     // 작성자 여부 확인 (임시로 true로 설정)
-    isAuthor.value = true
+    // isAuthor.value = true
 
     // 지역 선택 초기화
-    if (isAuthor.value) {
-      selectedSido.value = study.value.location.sido
-      handleSidoChange()
-      selectedSigungu.value = study.value.location.sigungu
-      handleSigunguChange()
-      selectedDong.value = study.value.location.dong
-    }
+    // if (isAuthor.value) {
+    //   selectedSido.value = study.value.location.sido
+    //   handleSidoChange()
+    //   selectedSigungu.value = study.value.location.sigungu
+    //   handleSigunguChange()
+    //   selectedDong.value = study.value.location.dong
+    // }
 
     // 카테고리 선택
-    const category = categories.value.find(cat => cat.id === study.value.category_id)
-    if (category) {
-      selectedCategory.value = category
-    }
+    // const category = categories.value.find(cat => cat.id === study.value.categoryId)
+    //   if (category) {
+    //     selectedCategory.value = category
+    // }
+
+    // 이미지 로딩 상태 초기화
+    // isImageLoading.value = !study.value.thumbnail
   } catch (error) {
     console.error('스터디 상세 정보 로딩 실패:', error)
+    isImageLoading.value = false
   }
 }
 
 // 카테고리 데이터 가져오기
 const fetchCategories = async () => {
   try {
+    // categories.value = mockCategories.categories
     const res = await axios.get('http://localhost:3000/category')
     categories.value = res.data.data
     
@@ -904,10 +970,56 @@ const fetchDongList = async (districtId) => {
   border-radius: 8px;
 }
 
+.thumbnail-container {
+  width: 100%;
+  height: 480px;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.study-thumbnail-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.skeleton-content {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .study-thumbnail {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  z-index: 2;
 }
 
 .participants-section {

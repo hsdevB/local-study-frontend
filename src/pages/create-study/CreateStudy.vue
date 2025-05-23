@@ -83,7 +83,7 @@
                     <option value="">시/군/구 선택</option>
                     <option v-for="sigungu in sigunguList" :key="sigungu.id" :value="sigungu.id">{{ sigungu.name }}</option>
                   </select>
-                  <select v-model="selectedDong" class="form-select" :disabled="!selectedSigungu" required>
+                  <select v-model="selectedDong" @change="handleDongChange" class="form-select" :disabled="!selectedSigungu" required>
                     <option value="">읍/면/동 선택</option>
                     <option v-for="dong in dongList" :key="dong.id" :value="dong.id">{{ dong.name }}</option>
                   </select>
@@ -239,6 +239,9 @@ const handleSidoChange = async () => {
   dongList.value = []
   
   if (selectedSido.value) {
+    formData.value.city_id = selectedSido.value
+    formData.value.district_id = ''
+    formData.value.town_id = ''
     await fetchSigunguList(selectedSido.value)
   }
 }
@@ -250,7 +253,16 @@ const handleSigunguChange = async () => {
   dongList.value = []
   
   if (selectedSigungu.value) {
+    formData.value.district_id = selectedSigungu.value
+    formData.value.town_id = ''
     await fetchDongList(selectedSigungu.value)
+  }
+}
+
+// 읍/면/동 변경 핸들러 추가
+const handleDongChange = () => {
+  if (selectedDong.value) {
+    formData.value.town_id = selectedDong.value
   }
 }
 

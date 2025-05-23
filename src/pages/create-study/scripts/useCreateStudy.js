@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-// import axios from 'axios'
+import axios from 'axios'
 
 export const useCreateStudy = () => {
   const router = useRouter()
@@ -12,7 +12,10 @@ export const useCreateStudy = () => {
     startDate: '',
     endDate: '',
     maxMembers: 1,
-    thumbnail: null
+    thumbnail: null,
+    city_id: '',
+    district_id: '',
+    town_id: ''
   })
 
   const handleThumbnailChange = (event) => {
@@ -46,36 +49,25 @@ export const useCreateStudy = () => {
       submitData.append('endDate', formData.value.endDate)
       submitData.append('maxMembers', formData.value.maxMembers)
       submitData.append('thumbnail', formData.value.thumbnail)
+      submitData.append('city_id', formData.value.city_id)
+      submitData.append('district_id', formData.value.district_id)
+      submitData.append('town_id', formData.value.town_id)
 
-      // API 호출 부분 주석 처리
-      /*
-      const response = await axios.post('/api/studies', submitData, {
+      const response = await axios.post('http://localhost:3000/study', submitData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
 
-      if (response.status === 201) {
+      if (response.data.success) {
         alert('스터디가 성공적으로 생성되었습니다.')
-        router.push('/mainpage')
+        router.push('/')
+      } else {
+        throw new Error(response.data.message || '스터디 생성에 실패했습니다.')
       }
-      */
-
-      // 임시로 성공 메시지 표시
-      console.log('스터디 생성 데이터:', {
-        title: formData.value.title,
-        content: formData.value.content,
-        startDate: formData.value.startDate,
-        endDate: formData.value.endDate,
-        maxMembers: formData.value.maxMembers,
-        thumbnail: formData.value.thumbnail
-      })
-      alert('스터디가 성공적으로 생성되었습니다.')
-      router.push('/mainpage')
-
     } catch (error) {
-      console.error('스터디 생성 중 오류 발생:', error)
-      alert('스터디 생성 중 오류가 발생했습니다. 다시 시도해주세요.')
+      console.error('스터디 생성 실패:', error)
+      alert(error.message || '스터디 생성에 실패했습니다.')
     }
   }
 

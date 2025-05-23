@@ -1,58 +1,5 @@
 <template>
   <div class="main-container">
-    <!-- 사이드바 -->
-    <aside class="sidebar">
-      <!-- 카테고리 목록 -->
-      <div class="categories">
-        <h5 class="sidebar-title">카테고리</h5>
-        <ul class="category-list">
-          <li 
-            v-for="category in categories" 
-            :key="category.id" 
-            class="category-item"
-            :class="{ 'selected': selectedCategory?.id === category.id }"
-          >
-            <a href="#" @click.prevent="selectCategory(category)">{{ category.name }}</a>
-          </li>
-        </ul>
-      </div>
-
-      <!-- 사용자 메뉴 -->
-      <div class="user-menu">
-        <template v-if="!isLoggedIn">
-          <div class="user-profile">
-            <div class="user-actions no-border">
-              <router-link to="/login" class="menu-item">로그인</router-link>
-              <router-link to="/signup" class="menu-item signup">회원가입</router-link>
-            </div>
-          </div>
-        </template>
-      </div>
-
-      <!-- 사용자 프로필 -->
-      <div v-if="isLoggedIn" class="user-profile">
-        <div class="profile-badge">
-          <router-link to="/mypage?tab=profile" class="username-link">
-            <h3 class="username">{{ username }} 님</h3>
-          </router-link>
-        </div>
-        <div class="user-stats">
-          <router-link to="/mypage?tab=applied" class="stat-item">
-            <span class="stat-value">{{ appliedStudies.length }}</span>
-            <span class="stat-label">신청 스터디</span>
-          </router-link>
-          <router-link to="/mypage?tab=created" class="stat-item">
-            <span class="stat-value">{{ createdStudies.length }}</span>
-            <span class="stat-label">운영 스터디</span>
-          </router-link>
-        </div>
-        <div class="user-actions">
-          <router-link to="/mypage" class="menu-item">마이페이지</router-link>
-          <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
-        </div>
-      </div>
-    </aside>
-
     <!-- 메인 콘텐츠 영역 -->
     <main class="main-content">
       <!-- 상단 영역 -->
@@ -82,7 +29,11 @@
       <div class="study-list" @wheel.prevent="handleStudyListScroll">
         <div v-for="study in filteredStudies" :key="study.id" class="study-card" @click="goToStudyDetail(study.id)">
           <div class="study-thumbnail">
+            <div v-show="study.isImageLoading" class="study-thumbnail-skeleton">
+              <div class="skeleton-content"></div>
+            </div>
             <img 
+              v-show="!study.isImageLoading"
               :src="study.thumbnail || logoImage" 
               :alt="study.title" 
               loading="lazy" 
@@ -91,6 +42,8 @@
               width="400"
               height="300"
               sizes="(max-width: 768px) 100vw, 25vw"
+              @load="handleImageLoad(study)"
+              @error="handleImageError(study)"
             >
           </div>
           <div class="study-info">
@@ -121,14 +74,25 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import logoImage from '@/assets/logo.png'
+// import mockStudies from '@/data/mockStudies.json'
+// import mockCategories from '@/data/mockCategories.json'
+// import mockLocations from '@/data/mockLocations.json'
 import axios from 'axios'
+
+const props = defineProps({
+  selectedCategory: {
+    type: Object,
+    default: null
+  }
+})
+
+const emit = defineEmits(['update:selectedCategory'])
 
 const router = useRouter()
 const route = useRoute()
 const categories = ref([])
 const isLoggedIn = ref(true)
-const username = ref('')
-const selectedCategory = ref(null)
+const username = ref('홍길동')
 const searchQuery = ref('')
 
 // 지역 선택 관련 상태
@@ -138,6 +102,9 @@ const selectedDong = ref('')
 const sidoList = ref([])
 const sigunguList = ref([])
 const dongList = ref([])
+
+// 지역 데이터 매핑
+// const locationData = mockLocations.locationData
 
 // 스터디 목록 관련 상태
 const studies = ref([])
@@ -218,14 +185,17 @@ const processSearchQuery = () => {
   if (categoryId) {
     const category = categories.value.find(cat => cat.id === parseInt(categoryId))
     if (category) {
-      selectedCategory.value = category
+      emit('update:selectedCategory', category)
     } else {
       // 카테고리를 찾지 못한 경우, 새로 생성
-      selectedCategory.value = {
+      emit('update:selectedCategory', {
         id: parseInt(categoryId),
         name: categoryName || '카테고리'
-      }
+      })
     }
+  } else if (categories.value.length > 0) {
+    // URL에 카테고리 정보가 없는 경우 기본 카테고리 선택
+    emit('update:selectedCategory', categories.value[0])
   }
 }
 
@@ -253,10 +223,10 @@ const goToCreateStudy = () => {
     return
   }
   // 현재 선택된 카테고리 정보를 저장
-  if (selectedCategory.value) {
+  if (props.selectedCategory) {
     localStorage.setItem('lastSelectedCategory', JSON.stringify({
-      id: selectedCategory.value.id,
-      name: selectedCategory.value.name
+      id: props.selectedCategory.id,
+      name: props.selectedCategory.name
     }))
   }
   router.push('/create-study')
@@ -264,12 +234,15 @@ const goToCreateStudy = () => {
 
 // 필터링된 스터디 목록
 const filteredStudies = computed(() => {
-  if (!selectedCategory.value) return []
+  console.log('[Mainpage] filteredStudies - selectedCategory:', props.selectedCategory)
+  console.log('[Mainpage] filteredStudies - studies:', studies.value)
+  if (!props.selectedCategory) return []
+  const selectedCategoryId = Number(props.selectedCategory.id)
+  let filtered = studies.value.filter(study => {
+    const studyCategoryId = Number(study.Category?.id)
+    return studyCategoryId === selectedCategoryId
+  })
   
-  let filtered = studies.value.filter(study => 
-    study.categoryId === selectedCategory.value.id
-  )
-
   // 검색어가 있는 경우 필터링
   if (searchQuery.value) {
     const query = searchQuery.value.trim()
@@ -284,14 +257,16 @@ const filteredStudies = computed(() => {
 
   // 지역 필터링
   if (selectedSido.value) {
+    console.log('Selected Sido ID:', selectedSido.value) // 디버깅용 로그
     filtered = filtered.filter(study => {
-      const matchesSido = study.location?.sido === selectedSido.value
+      console.log('Study City ID:', study.City?.id, 'Selected Sido ID:', selectedSido.value) // 디버깅용 로그
+      const matchesSido = study.City?.id === Number(selectedSido.value)
       
       if (selectedSigungu.value) {
-        const matchesSigungu = study.location?.sigungu === selectedSigungu.value
+        const matchesSigungu = Number(study.District?.id) === Number(selectedSigungu.value)
         
         if (selectedDong.value) {
-          return matchesSido && matchesSigungu && study.location?.dong === selectedDong.value
+          return matchesSido && matchesSigungu && Number(study.Town?.id) === Number(selectedDong.value)
         }
         
         return matchesSido && matchesSigungu
@@ -307,31 +282,26 @@ const filteredStudies = computed(() => {
 // 카테고리 데이터 가져오기
 const fetchCategories = async () => {
   try {
+    // categories.value = mockCategories.categories
     const res = await axios.get('http://localhost:3000/category')
     categories.value = res.data.data
-    // 기본 카테고리 선택
-    if (categories.value.length > 0) {
-      selectedCategory.value = categories.value[0]
+    if (categories.value.length > 0 && !props.selectedCategory) {
+      emit('update:selectedCategory', categories.value[0])
     }
   } catch (error) {
     console.error('카테고리 로딩 실패:', error)
   }
 }
 
-// 카테고리 선택 처리
-const selectCategory = (category) => {
-  selectedCategory.value = category
-  resetLocation() // 카테고리 변경 시 지역 선택 초기화
-  console.log('선택된 카테고리:', category)
-}
-
-// 로그아웃 처리
-const logout = () => {
-  // TODO: 로그아웃 로직 구현
-  isLoggedIn.value = false
-  username.value = ''
-  router.push('/')
-}
+// 라우트 변경 감지
+watch(() => route.query.category, (newCategoryId) => {
+  if (newCategoryId) {
+    const category = categories.value.find(cat => cat.id === Number(newCategoryId))
+    if (category) {
+      emit('update:selectedCategory', category)
+    }
+  }
+}, { immediate: true })
 
 // 로그인 상태 확인
 const checkLoginStatus = () => {
@@ -394,237 +364,31 @@ const fetchDongList = async (districtId) => {
 // 스터디 목록 가져오기
 const fetchStudies = async () => {
   try {
-    // TODO: 실제 API 호출로 대체
-    // 임시 데이터
-    studies.value = [
-      {
-        id: 1,
-        categoryId: 1,
-        title: '프로그래밍 스터디',
-        content: '함께 프로그래밍을 배우고 실력을 향상시켜요!함께 프로그래밍을 배우고 실력을 향상시켜요!함께 프로그래밍을 배우고 실력을 향상시켜요!함께 프로그래밍을 배우고 실력을 향상시켜요!함께 프로그래밍을 배우고 실력을 향상시켜요!함께 프로그래밍을 배우고 실력을 향상시켜요!',
-        author: '홍길동',
-        currentMembers: 3,
-        maxMembers: 5,
-        thumbnail: '',
-        location: {
-          sido: '서울특별시',
-          sigungu: '강남구',
-          dong: '역삼동'
+    console.log('[Mainpage] Fetching studies...')
+    const response = await axios.get('http://localhost:3000/study')
+    if (response.data.success) {
+      studies.value = response.data.data.map(study => {
+        return {
+          id: study.id,
+          title: study.title,
+          content: study.description,
+          thumbnail: study.thumbnail,
+          currentMembers: study.current_participants,
+          maxMembers: study.max_participants,
+          Category: study.Category,
+          author: study.User?.nickname,
+          City: study.City,
+          District: study.District,
+          Town: study.Town,
+          isImageLoading: true
         }
-      },
-      {
-        id: 2,
-        categoryId: 1,
-        title: '자격증도전반',
-        content: '정보처리기사 자격증 취득을 위한 스터디입니다.',
-        author: '김철수',
-        currentMembers: 4,
-        maxMembers: 6,
-        thumbnail: 'https://picsum.photos/400/301',
-        location: {
-          sido: '서울특별시',
-          sigungu: '서초구',
-          dong: '서초동'
-        }
-      },
-      {
-        id: 3,
-        categoryId: 1,
-        title: '웹 개발 스터디',
-        content: '프론트엔드와 백엔드 개발을 함께 배워요.',
-        author: '이영희',
-        currentMembers: 2,
-        maxMembers: 4,
-        thumbnail: 'https://picsum.photos/400/302',
-        location: {
-          sido: '부산광역시',
-          sigungu: '해운대구',
-          dong: '우동'
-        }
-      },
-      {
-        id: 4,
-        categoryId: 1,
-        title: 'UI/UX 디자인 스터디',
-        content: '사용자 경험을 중심으로 한 디자인 학습',
-        author: '박지민',
-        currentMembers: 5,
-        maxMembers: 8,
-        thumbnail: 'https://picsum.photos/400/303',
-        location: {
-          sido: '서울특별시',
-          sigungu: '마포구',
-          dong: '홍대입구'
-        }
-      },
-      {
-        id: 5,
-        categoryId: 1,
-        title: '그래픽 디자인 기초',
-        content: '포토샵과 일러스트레이터 기초부터 실전까지',
-        author: '최유진',
-        currentMembers: 3,
-        maxMembers: 5,
-        thumbnail: 'https://picsum.photos/400/304',
-        location: {
-          sido: '인천광역시',
-          sigungu: '연수구',
-          dong: '송도동'
-        }
-      },
-      {
-        id: 6,
-        categoryId: 1,
-        title: '디지털 마케팅 스터디',
-        content: 'SNS 마케팅과 콘텐츠 제작 실습',
-        author: '정다은',
-        currentMembers: 4,
-        maxMembers: 6,
-        thumbnail: 'https://picsum.photos/400/305',
-        location: {
-          sido: '서울특별시',
-          sigungu: '강남구',
-          dong: '삼성동'
-        }
-      },
-      {
-        id: 7,
-        categoryId: 1,
-        title: '브랜드 마케팅 전략',
-        content: '브랜드 아이덴티티 구축과 마케팅 전략 수립',
-        author: '김민준',
-        currentMembers: 2,
-        maxMembers: 4,
-        thumbnail: 'https://picsum.photos/400/306',
-        location: {
-          sido: '부산광역시',
-          sigungu: '남구',
-          dong: '대연동'
-        }
-      },
-      {
-        id: 8,
-        categoryId: 1,
-        title: '스타트업 창업 스터디',
-        content: '창업 아이템 발굴부터 비즈니스 모델 설계까지',
-        author: '이승우',
-        currentMembers: 6,
-        maxMembers: 8,
-        thumbnail: 'https://picsum.photos/400/307',
-        location: {
-          sido: '서울특별시',
-          sigungu: '송파구',
-          dong: '잠실동'
-        }
-      },
-      {
-        id: 9,
-        categoryId: 1,
-        title: '재무관리 스터디',
-        content: '기업 재무제표 분석과 투자 전략',
-        author: '박서연',
-        currentMembers: 3,
-        maxMembers: 5,
-        thumbnail: 'https://picsum.photos/400/308',
-        location: {
-          sido: '인천광역시',
-          sigungu: '남동구',
-          dong: '구월동'
-        }
-      },
-      {
-        id: 10,
-        categoryId: 1,
-        title: '영어 회화 스터디',
-        content: '실전 영어 회화와 토론',
-        author: '최지원',
-        currentMembers: 4,
-        maxMembers: 6,
-        thumbnail: 'https://picsum.photos/400/309',
-        location: {
-          sido: '서울특별시',
-          sigungu: '강서구',
-          dong: '화곡동'
-        }
-      },
-      {
-        id: 11,
-        categoryId: 1,
-        title: '일본어 JLPT 준비반',
-        content: 'JLPT N2 합격을 위한 스터디',
-        author: '김수진',
-        currentMembers: 5,
-        maxMembers: 7,
-        thumbnail: 'https://picsum.photos/400/310',
-        location: {
-          sido: '부산광역시',
-          sigungu: '동래구',
-          dong: '명륜동'
-        }
-      },
-      {
-        id: 12,
-        categoryId: 1,
-        title: '알고리즘 스터디',
-        content: '코딩 테스트 대비 알고리즘 문제 풀이',
-        author: '이준호',
-        currentMembers: 3,
-        maxMembers: 5,
-        thumbnail: 'https://picsum.photos/400/311',
-        location: {
-          sido: '서울특별시',
-          sigungu: '서초구',
-          dong: '반포동'
-        }
-      },
-      {
-        id: 13,
-        categoryId: 1,
-        title: '모션 그래픽 디자인',
-        content: '애프터이펙트를 활용한 모션 그래픽 제작',
-        author: '정민서',
-        currentMembers: 2,
-        maxMembers: 4,
-        thumbnail: 'https://picsum.photos/400/312',
-        location: {
-          sido: '인천광역시',
-          sigungu: '연수구',
-          dong: '연수동'
-        }
-      },
-      {
-        id: 14,
-        categoryId: 1,
-        title: '콘텐츠 마케팅 스터디',
-        content: '유튜브 채널 운영과 콘텐츠 제작',
-        author: '박현우',
-        currentMembers: 4,
-        maxMembers: 6,
-        thumbnail: 'https://picsum.photos/400/313',
-        location: {
-          sido: '서울특별시',
-          sigungu: '마포구',
-          dong: '상암동'
-        }
-      },
-      {
-        id: 15,
-        categoryId: 1,
-        title: '투자 분석 스터디',
-        content: '주식 투자와 포트폴리오 관리',
-        author: '김태영',
-        currentMembers: 5,
-        maxMembers: 7,
-        thumbnail: 'https://picsum.photos/400/314',
-        location: {
-          sido: '부산광역시',
-          sigungu: '해운대구',
-          dong: '중동'
-        }
-      }
-    ]
+      })
+      console.log('[Mainpage] Studies fetched:', studies.value)
+    } else {
+      console.error('[Mainpage] Failed to fetch studies:', response.data.message)
+    }
   } catch (error) {
-    console.error('스터디 목록 로딩 실패:', error)
+    console.error('[Mainpage] 스터디 목록 로딩 실패:', error)
   }
 }
 
@@ -632,12 +396,6 @@ const fetchStudies = async () => {
 const goToStudyDetail = (studyId) => {
   router.push(`/study/${studyId}`)
 }
-
-// 카테고리 변경 시 스터디 목록 새로고침
-watch(selectedCategory, () => {
-  currentPage.value = 1
-  fetchStudies()
-})
 
 // 스터디 목록 스크롤 처리
 const handleStudyListScroll = (event) => {
@@ -671,12 +429,15 @@ const appliedStudies = ref([])
 const createdStudies = ref([])
 
 // 초기 데이터 로드
-onMounted(() => {
-  fetchCategories()
-  checkLoginStatus()
-  fetchStudies()
-  fetchSidoList() // 시/도 목록 가져오기 추가
+onMounted(async () => {
+  await checkLoginStatus()
+  await fetchCategories()
+  await fetchStudies()
+  await fetchSidoList()
   processSearchQuery()
+  console.log('[Mainpage] selectedCategory:', props.selectedCategory)
+  console.log('[Mainpage] categories:', categories.value)
+  console.log('[Mainpage] studies:', studies.value)
   
   // 임시 데이터
   appliedStudies.value = [
@@ -710,6 +471,16 @@ onMounted(() => {
   link.href = logoImage
   document.head.appendChild(link)
 })
+
+// 이미지 로드 핸들러
+const handleImageLoad = (study) => {
+  study.isImageLoading = false
+}
+
+// 이미지 에러 핸들러
+const handleImageError = (study) => {
+  study.isImageLoading = false
+}
 
 // 컴포넌트 메서드 노출
 defineExpose({
@@ -856,6 +627,7 @@ defineExpose({
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
+  line-height: 1.5;
 }
 
 .header-actions {
@@ -902,6 +674,55 @@ h3 {
   overscroll-behavior: contain;
 }
 
+@media (max-width: 1200px) {
+  .study-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .study-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .mainpage-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #eee5dd;
+    padding: 1rem;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .content-section {
+    padding: 0;
+  }
+
+  .study-tabs {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-btn {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 576px) {
+  .study-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 .study-list::-webkit-scrollbar {
   width: 8px;
 }
@@ -939,14 +760,49 @@ h3 {
 .study-thumbnail {
   width: 100%;
   height: 160px;
+  position: relative;
   overflow: hidden;
-  flex-shrink: 0;
+  border-radius: 8px 8px 0 0;
+}
+
+.study-thumbnail-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #f5f5f5;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.skeleton-content {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .study-thumbnail img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  z-index: 2;
 }
 
 .study-info {
