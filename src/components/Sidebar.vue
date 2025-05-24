@@ -15,37 +15,33 @@
       </ul>
     </div>
 
-    <!-- 사용자 메뉴 -->
-    <div class="user-menu">
-      <template v-if="!isLoggedIn">
-        <div class="user-profile">
-          <div class="user-actions no-border">
-            <router-link to="/login" class="menu-item">로그인</router-link>
-            <router-link to="/signup" class="menu-item signup">회원가입</router-link>
-          </div>
+    <!-- 사용자 프로필 -->
+    <div class="user-profile">
+      <template v-if="isLoggedIn">
+        <div class="profile-badge">
+          <h3 class="username">{{ username }} 님</h3>
+        </div>
+        <div class="user-stats">
+          <router-link to="/mypage?tab=applied" class="stat-item" :class="{ 'active': route.query.tab === 'applied' }">
+            <span class="stat-value">{{ appliedStudies.length }}</span>
+            <span class="stat-label">신청 스터디</span>
+          </router-link>
+          <router-link to="/mypage?tab=created" class="stat-item" :class="{ 'active': route.query.tab === 'created' }">
+            <span class="stat-value">{{ createdStudies.length }}</span>
+            <span class="stat-label">운영 스터디</span>
+          </router-link>
+        </div>
+        <div class="user-actions">
+        <router-link to="/mypage?tab=profile" class="menu-item">마이페이지 (내정보)</router-link>
+          <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
         </div>
       </template>
-    </div>
-
-    <!-- 사용자 프로필 -->
-    <div v-if="isLoggedIn" class="user-profile">
-      <div class="profile-badge">
-        <h3 class="username">{{ username }} 님</h3>
-      </div>
-      <div class="user-stats">
-        <router-link to="/mypage?tab=applied" class="stat-item" :class="{ 'active': route.query.tab === 'applied' }">
-          <span class="stat-value">{{ appliedStudies.length }}</span>
-          <span class="stat-label">신청 스터디</span>
-        </router-link>
-        <router-link to="/mypage?tab=created" class="stat-item" :class="{ 'active': route.query.tab === 'created' }">
-          <span class="stat-value">{{ createdStudies.length }}</span>
-          <span class="stat-label">운영 스터디</span>
-        </router-link>
-      </div>
-      <div class="user-actions">
-        <router-link to="/mypage?tab=profile" class="menu-item">마이페이지 (내정보)</router-link>
-        <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
-      </div>
+      <template v-else>
+        <div class="user-actions no-border">
+          <router-link to="/login" class="menu-item">로그인</router-link>
+          <router-link to="/signup" class="menu-item signup">회원가입</router-link>
+        </div>
+      </template>
     </div>
   </aside>
 </template>
@@ -146,7 +142,11 @@ const selectCategory = (category) => {
 // 로그아웃 함수
 const logout = async () => {
   try {
+    const token = localStorage.getItem('token')
     await axios.post('http://localhost:3000/user/logout', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
       withCredentials: true
     })
     localStorage.removeItem('token')

@@ -32,6 +32,15 @@
                   중복 확인
                 </button>
               </div>
+              <div v-if="userIdCheckStatus !== 'idle'" class="mt-1">
+                <small :class="{
+                  'text-success': userIdCheckStatus === 'available',
+                  'text-danger': userIdCheckStatus === 'exists' || userIdCheckStatus === 'error',
+                  'text-secondary': userIdCheckStatus === 'checking'
+                }">
+                  {{ userIdCheckMessage }}
+                </small>
+              </div>
             </div>
   
             <!-- 비밀번호 -->
@@ -42,7 +51,7 @@
                 type="password"
                 class="form-control"
                 v-model="password"
-                placeholder="비밀번호"
+                placeholder="비밀번호를 입력하세요 (영문, 숫자, 특수문자 포함)"
                 required
               />
             </div>
@@ -81,14 +90,45 @@
                   v-model="email"
                   placeholder="이메일"
                   required
+                  :disabled="emailVerificationStatus === 'verified'"
                 />
                 <button
                   type="button"
                   class="btn btn-verify"
                   @click="sendEmailVerification"
+                  :disabled="emailCheckStatus !== 'available' || emailVerificationStatus === 'verified'"
                 >
                   이메일 인증
                 </button>
+              </div>
+              <div v-if="emailCheckStatus === 'exists' || emailCheckStatus === 'error'" class="mt-1">
+                <small :class="{
+                  'text-danger': emailCheckStatus === 'exists' || emailCheckStatus === 'error'
+                }">
+                  {{ emailCheckMessage }}
+                </small>
+              </div>
+              <div v-if="emailVerificationStatus !== 'idle' && emailVerificationStatus !== 'verified'" class="mt-1">
+                <small :class="{
+                  'text-success': emailVerificationStatus === 'sent',
+                  'text-danger': emailVerificationStatus === 'error',
+                  'text-secondary': emailVerificationStatus === 'sending' || emailVerificationStatus === 'verifying'
+                }">
+                  {{ emailVerificationMessage }}
+                </small>
+              </div>
+              <div v-if="showEmailCodeInput && emailVerificationStatus !== 'verified'" class="input-group mt-2">
+                <input
+                  type="text"
+                  class="form-control"
+                  v-model="emailVerificationCode"
+                  placeholder="인증 코드 입력"
+                  maxlength="6"
+                />
+                <button type="button" class="btn btn-verify" @click="verifyEmailCode">인증 확인</button>
+              </div>
+              <div v-if="emailVerificationStatus === 'verified'" class="mt-1">
+                <small class="text-success">이메일 인증이 완료되었습니다.</small>
               </div>
             </div>
 
@@ -128,14 +168,21 @@
             <!-- 생년월일 -->
             <div class="mb-3">
               <label for="birthDate" class="form-label">생년월일</label>
-              <input
-                id="birthDate"
-                type="date"
-                class="form-control"
-                v-model="birthDate"
-                :max="maxDate"
-                required
-              />
+              <div class="date-picker-wrapper" @click="focusBirthDateInput">
+                <input
+                  id="birthDate"
+                  type="date"
+                  class="form-control date-input"
+                  v-model="birthDate"
+                  :max="maxDate"
+                  required
+                  ref="birthDateInput"
+                  style="opacity:0;position:absolute;top:0;left:0;width:100%;height:100%;z-index:3;cursor:pointer;"
+                />
+                <div class="date-display" :class="{ 'placeholder': !birthDate }">
+                  {{ birthDate ? formatBirthDate(birthDate) : '생년월일 선택' }}
+                </div>
+              </div>
             </div>
 
             <!-- 핸드폰 번호 -->
@@ -158,7 +205,7 @@
   
             <!-- 취소 버튼: 로그인 페이지로 돌아가기 -->
             <div class="d-grid">
-              <button type="button" class="btn btn-secondary" @click="goToLogin">
+              <button type="button" class="btn btn-secondary" @click="goBack">
                 취소
               </button>
             </div>
@@ -169,8 +216,9 @@
   </template>
   
   <script setup>
-  import { ref, computed } from 'vue'
+  import { ref, computed, watch } from 'vue'
   import { useRouter } from 'vue-router'
+  import axios from 'axios'
   
   const userId = ref('')
   const password = ref('')
@@ -187,22 +235,146 @@
   const today = new Date()
   const maxDate = today.toISOString().split('T')[0]
   
-  const checkUserIdDuplicate = () => {
+  const userIdCheckStatus = ref('idle') // idle | checking | available | exists | error
+  const userIdCheckMessage = ref('')
+
+  const emailCheckStatus = ref('idle') // idle | checking | available | exists | error
+  const emailCheckMessage = ref('')
+  const emailVerificationStatus = ref('idle') // idle | sending | sent | verified | error
+  const emailVerificationMessage = ref('')
+  const emailVerificationCode = ref('')
+  const showEmailCodeInput = ref(false)
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  const checkUserIdDuplicate = async () => {
     if (!userId.value) {
-      alert('아이디를 입력해주세요.')
+      userIdCheckStatus.value = 'error'
+      userIdCheckMessage.value = '아이디를 입력해주세요.'
       return
     }
-    // TODO: 서버 중복확인 API 호출 로직 작성
-    alert(`아이디 중복 확인: ${userId.value} (서버 호출 필요)`)
+    userIdCheckStatus.value = 'checking'
+    userIdCheckMessage.value = '중복 확인 중...'
+    try {
+      const res = await axios.get(`http://localhost:3000/signup/check-userid`, {
+        params: { userId: userId.value }
+      })
+      if (res.data.success) {
+        if (res.data.available) {
+          userIdCheckStatus.value = 'available'
+          userIdCheckMessage.value = '사용 가능한 아이디입니다.'
+        } else {
+          userIdCheckStatus.value = 'exists'
+          userIdCheckMessage.value = '이미 사용 중인 아이디입니다.'
+        }
+      } else {
+        userIdCheckStatus.value = 'error'
+        userIdCheckMessage.value = '중복 확인에 실패했습니다.'
+      }
+    } catch {
+      userIdCheckStatus.value = 'error'
+      userIdCheckMessage.value = '중복 확인 중 오류가 발생했습니다.'
+    }
   }
   
-  const sendEmailVerification = () => {
-    if (!email.value) {
-      alert('이메일을 입력해주세요.')
+  // 아이디 입력값이 바뀌면 상태 초기화
+  watch(userId, () => {
+    userIdCheckStatus.value = 'idle'
+    userIdCheckMessage.value = ''
+  })
+  
+  // 이메일 입력값이 바뀌면 상태 초기화 및 형식 검사/중복 확인
+  watch(email, async (newVal) => {
+    emailCheckStatus.value = 'idle'
+    emailCheckMessage.value = ''
+    emailVerificationStatus.value = 'idle'
+    emailVerificationMessage.value = ''
+    showEmailCodeInput.value = false
+    emailVerificationCode.value = ''
+    if (!newVal) return
+    if (!emailRegex.test(newVal)) {
+      emailCheckStatus.value = 'error'
+      emailCheckMessage.value = '올바른 이메일 형식이 아닙니다.'
       return
     }
-    // TODO: 이메일 인증 API 호출 로직 작성
-    alert(`인증 메일 전송: ${email.value} (서버 호출 필요)`)
+    // 이메일 중복 확인
+    emailCheckStatus.value = 'checking'
+    emailCheckMessage.value = '중복 확인 중...'
+    try {
+      const res = await axios.get('http://localhost:3000/signup/check-email', {
+        params: { email: newVal }
+      })
+      if (res.data.success) {
+        if (res.data.available) {
+          emailCheckStatus.value = 'available'
+          emailCheckMessage.value = '사용 가능한 이메일입니다.'
+        } else {
+          emailCheckStatus.value = 'exists'
+          emailCheckMessage.value = '이미 회원가입된 이메일입니다.'
+        }
+      } else {
+        emailCheckStatus.value = 'error'
+        emailCheckMessage.value = '이메일 중복 확인에 실패했습니다.'
+      }
+    } catch {
+      emailCheckStatus.value = 'error'
+      emailCheckMessage.value = '이메일 중복 확인 중 오류가 발생했습니다.'
+    }
+  })
+  
+  const sendEmailVerification = async () => {
+    if (!email.value) {
+      emailCheckStatus.value = 'error'
+      emailCheckMessage.value = '이메일을 입력해주세요.'
+      return
+    }
+    if (emailCheckStatus.value !== 'available') {
+      emailCheckStatus.value = 'error'
+      emailCheckMessage.value = '사용 가능한 이메일을 입력해주세요.'
+      return
+    }
+    emailVerificationStatus.value = 'sending'
+    emailVerificationMessage.value = '인증 코드 발송 중...'
+    try {
+      const res = await axios.post('http://localhost:3000/signup/send-email-code', { email: email.value })
+      if (res.data.success) {
+        emailVerificationStatus.value = 'sent'
+        emailVerificationMessage.value = '인증 코드가 이메일로 발송되었습니다.'
+        showEmailCodeInput.value = true
+      } else {
+        emailVerificationStatus.value = 'error'
+        emailVerificationMessage.value = res.data.message || '인증 코드 발송에 실패했습니다.'
+      }
+    } catch {
+      emailVerificationStatus.value = 'error'
+      emailVerificationMessage.value = '인증 코드 발송 중 오류가 발생했습니다.'
+    }
+  }
+
+  const verifyEmailCode = async () => {
+    if (!emailVerificationCode.value) {
+      emailVerificationStatus.value = 'error'
+      emailVerificationMessage.value = '인증 코드를 입력해주세요.'
+      return
+    }
+    emailVerificationStatus.value = 'verifying'
+    emailVerificationMessage.value = '인증 코드 확인 중...'
+    try {
+      const res = await axios.post('http://localhost:3000/signup/verify-email-code', {
+        email: email.value,
+        code: emailVerificationCode.value
+      })
+      if (res.data.success) {
+        emailVerificationStatus.value = 'verified'
+        emailVerificationMessage.value = '이메일 인증이 완료되었습니다.'
+      } else {
+        emailVerificationStatus.value = 'error'
+        emailVerificationMessage.value = res.data.message || '인증 코드가 올바르지 않습니다.'
+      }
+    } catch {
+      emailVerificationStatus.value = 'error'
+      emailVerificationMessage.value = '인증 코드 확인 중 오류가 발생했습니다.'
+    }
   }
 
     // 비밀번호 일치 여부 계산
@@ -210,7 +382,7 @@
     return passwordConfirm.value.length > 0 && password.value === passwordConfirm.value
     })
   
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!userId.value || !password.value || !passwordConfirm.value || !email.value || !birthDate.value || !gender.value || !phone.value || !nickname.value) {
       alert('모든 필드를 입력해주세요.')
       return
@@ -219,12 +391,37 @@
       alert('비밀번호와 비밀번호 확인이 일치하지 않습니다.')
       return
     }
-    // TODO: 회원가입 API 호출
-    alert(`회원가입 시도: ${userId.value}`)
+    if (emailVerificationStatus.value !== 'verified') {
+      alert('이메일 인증을 완료해주세요.')
+      return
+    }
+    try {
+      const res = await axios.post('http://localhost:3000/signup', {
+        userId: userId.value,
+        password: password.value,
+        nickname: nickname.value,
+        email: email.value,
+        phoneNumber: phone.value,
+        birthDate: birthDate.value,
+        gender: gender.value
+      })
+      if (res.data.success) {
+        alert('회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.')
+        router.push('/login')
+      } else {
+        alert(res.data.message || '회원가입에 실패했습니다.')
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || '회원가입 처리 중 오류가 발생했습니다.')
+    }
   }
   
-  const goToLogin = () => {
-    router.push('/login')
+  const goBack = () => {
+    if (window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/')
+    }
   }
 
   const goToMain = () => {
@@ -233,6 +430,25 @@
 
   const toggleGender = (event) => {
     gender.value = event.target.checked ? '여' : '남'
+  }
+
+  const birthDateInput = ref(null)
+  const focusBirthDateInput = () => {
+    if (birthDateInput.value) {
+      birthDateInput.value.focus();
+      if (typeof birthDateInput.value.showPicker === 'function') {
+        birthDateInput.value.showPicker();
+      }
+    }
+  }
+
+  const formatBirthDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}년 ${month}월 ${day}일`
   }
   </script>
   
@@ -492,6 +708,43 @@
 
   .gap-2 {
     gap: 0.5rem;
+  }
+
+  .date-picker-wrapper {
+    position: relative;
+    width: 100%;
+    height: 44px;
+    cursor: pointer;
+  }
+  .date-display {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e3d8ce;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: #4b3621;
+    background-color: #fff;
+    transition: all 0.2s ease;
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .date-picker-wrapper:hover .date-display {
+    border-color: #c4b5a5;
+    background-color: #fdfbf9;
+  }
+  .date-picker-wrapper:focus-within .date-display {
+    border-color: #6f4e37;
+    box-shadow: 0 0 0 2px rgba(111, 78, 55, 0.1);
   }
   </style>
   
