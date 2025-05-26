@@ -198,12 +198,17 @@ const appliedTab = ref('all')
 // 내가 만든 스터디 필터링
 const filteredCreatedStudies = computed(() => {
   if (studyTab.value === 'all') return createdStudies.value
+  
   return createdStudies.value.filter(study => {
-    if (studyTab.value === 'recruiting') return study.status === '모집중'
-    if (studyTab.value === 'completed') return study.status === '모집완료'
-    return true
-  })
-})
+    const isCompleted = 
+      study.currentMembers >= study.maxMembers || // 현재 인원이 최대 인원과 같거나 많을 때
+      new Date(study.endDate) < new Date(); // 마감일이 지났을 때
+    
+    if (studyTab.value === 'recruiting') return !isCompleted;
+    if (studyTab.value === 'completed') return isCompleted;
+    return true;
+  });
+});
 
 // 신청한 스터디 필터링
 const filteredAppliedStudies = computed(() => {
@@ -284,36 +289,44 @@ const fetchAppliedStudies = async () => {
 
 const fetchCreatedStudies = async () => {
   try {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token');
     if (!token) {
-      createdStudies.value = []
-      return
+      console.error('토큰이 없습니다.');
+      return;
     }
-    const res = await axios.get('http://localhost:3000/study-application/my-created', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    // 데이터 가공: Study join 구조
-    createdStudies.value = (res.data.data || []).map(s => {
-      return {
-        id: s.id,
-        title: s.title,
-        content: s.description,
-        currentMembers: s.current_participants,
-        maxMembers: s.max_participants,
-        category: s.Category?.name || '',
-        city: s.City?.name || '',
-        district: s.District?.name || '',
-        town: s.Town?.name || '',
-        thumbnail: (s.StudyThumbnails && s.StudyThumbnails[0]?.path) || logoImage,
-        status: s.status || '',
-        author: s.User?.nickname || '',
-        isImageLoading: true
+
+    const response = await axios.get('http://localhost:3000/study/my', {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    })
-  } catch {
-    createdStudies.value = []
+    });
+
+    console.log('API Response:', response.data);
+
+    if (response.data && response.data.studies) {
+      createdStudies.value = response.data.studies.map(study => ({
+        id: study.id,
+        title: study.title,
+        content: study.description,
+        maxMembers: study.max_participants,
+        currentMembers: study.current_participants || 1,
+        startDate: study.start_date,
+        endDate: study.end_date,
+        category: study.Category?.name || '',
+        city: study.City?.name || '',
+        district: study.District?.name || '',
+        town: study.Town?.name || '',
+        thumbnails: study.StudyThumbnails?.map(thumb => thumb.path) || [],
+        author: study.User?.nickname || ''
+      }));
+    } else {
+      createdStudies.value = [];
+    }
+  } catch (error) {
+    console.error('내가 만든 스터디 목록을 가져오는데 실패했습니다:', error);
+    createdStudies.value = [];
   }
-}
+};
 
 // 초기 데이터 로드
 onMounted(async () => {

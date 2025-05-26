@@ -537,61 +537,76 @@ const cancelEditing = () => {
 // 스터디 삭제 처리
 const handleDeleteStudy = async () => {
   if (!confirm('정말로 이 스터디를 삭제하시겠습니까?')) {
-    return
+    return;
   }
-  
+
   try {
-    // TODO: 실제 API 호출로 대체
-    // 임시 데이터 삭제 처리
-    alert('스터디가 삭제되었습니다.')
-    router.push('/')
+    const token = localStorage.getItem('token');
+    await axios.delete(`http://localhost:3000/study/${study.value.id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    alert('스터디가 삭제되었습니다.');
+    // 사이드바 업데이트를 위한 이벤트 발생
+    window.dispatchEvent(new Event('refreshSidebar'));
+    router.push('/');
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || '스터디 삭제 실패'
-    alert('스터디 삭제에 실패했습니다.')
+    console.error('스터디 삭제 중 오류 발생:', error);
+    alert('스터디 삭제 중 오류가 발생했습니다.');
   }
 }
 
 // 스터디 정보 업데이트
 const handleUpdateStudy = async () => {
   try {
-    // 썸네일이 삭제되었거나 비어 있으면 기본 이미지로 대체
-    if (thumbnailDeleted.value || !editedStudy.value.thumbnail) {
-      editedStudy.value.thumbnail = logoImage;
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('로그인이 필요합니다.');
+      return;
     }
-    // TODO: 실제 API 호출로 대체
-    study.value.title = editedStudy.value.title
-    study.value.category_id = editedStudy.value.category_id
-    study.value.maxMembers = editedStudy.value.maxMembers
-    study.value.startDate = editedStudy.value.startDate
-    study.value.endDate = editedStudy.value.endDate
-    study.value.content = editedStudy.value.content
-    study.value.location = {
-      sido: editedStudy.value.sido,
-      sigungu: editedStudy.value.sigungu,
-      dong: editedStudy.value.dong
-    }
-    // 썸네일도 반영
-    study.value.StudyThumbnails = [{ path: editedStudy.value.thumbnail }]
-    // kickedUserIds에 있는 유저 추방
+
+    // PUT 요청에 보낼 데이터 구성
+    const payload = {
+      title: editedStudy.value.title,
+      category_id: editedStudy.value.category_id,
+      max_participants: editedStudy.value.maxMembers,
+      start_date: editedStudy.value.startDate,
+      end_date: editedStudy.value.endDate,
+      description: editedStudy.value.content,
+      city_id: editedStudy.value.sido,
+      district_id: editedStudy.value.sigungu,
+      town_id: editedStudy.value.dong
+    };
+
+    await axios.put(
+      `http://localhost:3000/study/${study.value.id}`,
+      payload,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // 추방할 유저 처리
     for (const userId of kickedUserIds.value) {
       try {
-        const token = localStorage.getItem('token')
-        await axios.delete(`http://localhost:3000/study/${study.value.id}/participant/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      } catch {
+        await axios.delete(
+          `http://localhost:3000/study/${study.value.id}/participant/${userId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (e) {
         // 개별 에러는 무시하고 계속 진행
       }
     }
-    kickedUserIds.value = []
-    isEditing.value = false
-    thumbnailDeleted.value = false;
-    alert('스터디 정보가 수정되었습니다.')
+    kickedUserIds.value = [];
+
+    alert('스터디 정보가 수정되었습니다.');
+    isEditing.value = false;
+    await fetchStudyDetail(); // 최신 정보로 갱신
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || '스터디 수정 실패'
-    alert('스터디 수정에 실패했습니다.')
+    errorMessage.value = error.response?.data?.message || '스터디 수정 실패';
+    alert('스터디 수정에 실패했습니다.');
   }
-}
+};
 
 // 날짜 입력 필드 포커스 함수 추가
 const focusDateInput = (inputId) => {
@@ -782,12 +797,24 @@ watch(participantsTab, async (tab) => {
   }
 })
 
-// handleKickParticipant 함수 수정: 서버에 요청하지 않고 kickedUserIds에만 추가
-const handleKickParticipant = (userId) => {
-  if (!kickedUserIds.value.includes(userId)) {
-    kickedUserIds.value.push(userId)
+// handleKickParticipant 함수를 즉시 추방 방식으로 변경하여, 버튼 클릭 시 바로 API를 호출하고 성공 시 UI에서 해당 유저를 즉시 제거하도록 수정합니다.
+const handleKickParticipant = async (userId) => {
+  if (!userId) return;
+  if (!confirm('정말로 이 참여자를 추방하시겠습니까?')) return;
+
+  try {
+    const token = localStorage.getItem('token');
+    await axios.delete(
+      `http://localhost:3000/study/${study.value.id}/participant/${userId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    // UI에서 바로 제거
+    study.value.participants = study.value.participants.filter(p => p.userId !== userId);
+    alert('참여자를 추방했습니다.');
+  } catch (error) {
+    alert('참여자 추방에 실패했습니다.');
   }
-}
+};
 </script>
 
 <style scoped>
