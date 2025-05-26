@@ -29,9 +29,9 @@
             <template v-else>
               <img 
                 v-show="!isImageLoading"
-                :src="(study.StudyThumbnails && study.StudyThumbnails[0] && study.StudyThumbnails[0].path && study.StudyThumbnails[0].path.startsWith('/images/'))
+                :src="study.StudyThumbnails?.[0]?.path.startsWith('/images/')
                   ? 'http://localhost:3000' + study.StudyThumbnails[0].path
-                  : logoImage"
+                  : study.StudyThumbnails?.[0]?.path || logoImage"
                 :alt="study.title" 
                 class="study-thumbnail" 
                 loading="lazy" 
@@ -353,15 +353,16 @@ watch(
 
 // 이미지 로드 핸들러
 const handleImageLoad = () => {
-  isImageLoading.value = false
-}
+  isImageLoading.value = false;
+};
 
 // 이미지 에러 핸들러
 const handleImageError = () => {
-  isImageLoading.value = false
-  // 이미지 로드 실패 시 기본 이미지로 대체
-  study.value.StudyThumbnails = [{ path: logoImage }]
-}
+  isImageLoading.value = false;
+  if (study.value.StudyThumbnails?.[0]) {
+    study.value.StudyThumbnails[0].path = logoImage;
+  }
+};
 
 // 스터디 상세 정보 가져오기
 const fetchStudyDetail = async () => {
@@ -369,11 +370,6 @@ const fetchStudyDetail = async () => {
     const res = await axios.get(`http://localhost:3000/study/${route.params.id}`)
     const s = res.data.data.study
     const myUserId = localStorage.getItem('userId') // 현재 로그인한 내 userId
-
-    // StudyThumbnails 가공: 없거나 비어있으면 기본 이미지
-    const thumbnails = (s.StudyThumbnails && s.StudyThumbnails.length > 0)
-      ? s.StudyThumbnails
-      : [{ path: logoImage }]
 
     study.value = {
       id: s.id,
@@ -391,7 +387,7 @@ const fetchStudyDetail = async () => {
         sigungu: s.District?.name,
         dong: s.Town?.name
       },
-      StudyThumbnails: thumbnails,
+      StudyThumbnails: s.StudyThumbnails,
       participants: s.participants || [],
     }
 

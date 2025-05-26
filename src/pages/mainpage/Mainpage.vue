@@ -34,7 +34,9 @@
             </div>
             <img 
               v-show="!study.isImageLoading"
-              :src="study.StudyThumbnails?.[0]?.path || logoImage" 
+              :src="study.StudyThumbnails?.[0]?.path.startsWith('/images/')
+                ? 'http://localhost:3000' + study.StudyThumbnails[0].path
+                : study.StudyThumbnails?.[0]?.path || logoImage"
               :alt="study.title" 
               loading="lazy" 
               decoding="async" 
@@ -467,13 +469,14 @@ onMounted(async () => {
 
 // 이미지 로드 핸들러
 const handleImageLoad = (study) => {
-  study.isImageLoading = false
-}
+  study.isImageLoading = false;
+};
 
 // 이미지 에러 핸들러
 const handleImageError = (study) => {
-  study.isImageLoading = false
-}
+  study.isImageLoading = false;
+  study.thumbnail = logoImage;
+};
 
 // 컴포넌트 메서드 노출
 defineExpose({

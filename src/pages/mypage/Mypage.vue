@@ -120,14 +120,11 @@
                 </div>
                 <img 
                   v-show="!study.isImageLoading"
-                  :src="study.StudyThumbnails?.[0]?.path || logoImage" 
+                  :src="study.StudyThumbnails?.[0]?.path.startsWith('/images/')
+                    ? 'http://localhost:3000' + study.StudyThumbnails[0].path
+                    : study.StudyThumbnails?.[0]?.path || logoImage"
                   :alt="study.title" 
-                  loading="lazy" 
-                  decoding="async" 
-                  fetchpriority="high"
-                  width="400"
-                  height="300"
-                  sizes="(max-width: 768px) 100vw, 25vw"
+                  class="study-thumbnail-img"
                   @load="handleImageLoad(study)"
                   @error="handleImageError(study)"
                 >
@@ -187,14 +184,11 @@
                 </div>
                 <img 
                   v-show="!study.isImageLoading"
-                  :src="study.StudyThumbnails?.[0]?.path || logoImage" 
+                  :src="study.StudyThumbnails?.[0]?.path.startsWith('/images/')
+                    ? 'http://localhost:3000' + study.StudyThumbnails[0].path
+                    : study.StudyThumbnails?.[0]?.path || logoImage"
                   :alt="study.title" 
-                  loading="lazy" 
-                  decoding="async" 
-                  fetchpriority="high"
-                  width="400"
-                  height="300"
-                  sizes="(max-width: 768px) 100vw, 25vw"
+                  class="study-thumbnail-img"
                   @load="handleImageLoad(study)"
                   @error="handleImageError(study)"
                 >
@@ -495,14 +489,14 @@ onMounted(async () => {
 
 // 이미지 로드 핸들러
 const handleImageLoad = (study) => {
-  study.isImageLoading = false
-}
+  study.isImageLoading = false;
+};
 
 // 이미지 에러 핸들러
 const handleImageError = (study) => {
-  study.isImageLoading = false
-  study.thumbnail = logoImage
-}
+  study.isImageLoading = false;
+  study.thumbnail = logoImage;
+};
 
 const focusBirthDateInput = () => {
   if (birthDateInput.value) birthDateInput.value.showPicker();
