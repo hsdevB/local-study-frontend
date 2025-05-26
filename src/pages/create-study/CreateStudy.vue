@@ -52,7 +52,7 @@
                 </select>
               </div>
               <div class="content-members">
-                <span class="info-label">총 인원</span>
+                <span class="info-label">최대 인원</span>
                 <span class="info-content">
                   <i class="fas fa-users"></i>
                   <input 
@@ -63,6 +63,7 @@
                     min="1" 
                     max="999"
                     class="number-input"
+                    @change="validateMaxMembers"
                   >
                 </span>
               </div>
@@ -278,11 +279,10 @@ onMounted(async () => {
 
 // 폼 제출 시 지역 정보 추가
 const handleFormSubmit = async () => {
-  if (!selectedLocation.value) {
-    alert('지역을 선택해주세요.')
-    return
+  if (!selectedSido.value || !selectedSigungu.value || !selectedDong.value) {
+    alert('지역을 모두 선택해주세요.');
+    return;
   }
-  
   formData.value.location = {
     sido: selectedSido.value,
     sigungu: selectedSigungu.value,
@@ -361,6 +361,13 @@ const focusDateInput = (inputId) => {
   const input = document.getElementById(inputId)
   if (input) {
     input.showPicker()
+  }
+}
+
+const validateMaxMembers = () => {
+  if (formData.value.maxMembers < 1) {
+    alert('최소 인원은 1명 입니다')
+    formData.value.maxMembers = 1
   }
 }
 </script>
@@ -502,7 +509,7 @@ const focusDateInput = (inputId) => {
   width: 100%;
   margin-left: 0rem;
   position: relative;
-  left: 6rem;
+  left: 1rem;
 }
 
 .title-category-group {
@@ -648,6 +655,7 @@ const focusDateInput = (inputId) => {
   color: #8b6b4a;
   flex-shrink: 0;
   text-align: right;
+  margin-left: 0.5rem;
 }
 
 .info-content {

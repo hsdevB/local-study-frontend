@@ -77,6 +77,7 @@ const handleSubmit = async (e) => {
       if (response.data.data?.token) {
         localStorage.setItem('token', response.data.data.token)
       }
+      localStorage.setItem('userId', response.data.data.userId)
       setTimeout(() => {
         router.push('/')
       }, 300)

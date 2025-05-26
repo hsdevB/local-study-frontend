@@ -79,8 +79,8 @@
                 <h3 class="study-title">{{ study.title }}</h3>
                 <p class="study-content">{{ study.content }}</p>
                 <div class="study-meta">
+                  <span class="study-author">{{ profile.nickname }}</span>
                   <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
-                  <span class="study-status" :class="study.status">{{ study.status }}</span>
                 </div>
               </div>
             </div>
@@ -146,8 +146,8 @@
                 <h3 class="study-title">{{ study.title }}</h3>
                 <p class="study-content">{{ study.content }}</p>
                 <div class="study-meta">
+                  <span class="study-author">{{ profile.nickname }}</span>
                   <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
-                  <span class="study-status" :class="study.applicationStatus">{{ study.applicationStatus }}</span>
                 </div>
               </div>
             </div>
@@ -162,6 +162,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import logoImage from '@/assets/logo.png'
+import axios from 'axios'
 
 const router = useRouter()
 const route = useRoute()
@@ -208,7 +209,7 @@ const filteredCreatedStudies = computed(() => {
 const filteredAppliedStudies = computed(() => {
   if (appliedTab.value === 'all') return appliedStudies.value
   return appliedStudies.value.filter(study => {
-    if (appliedTab.value === 'waiting') return study.applicationStatus === '승인대기'
+    if (appliedTab.value === 'waiting') return study.applicationStatus === '대기'
     if (appliedTab.value === 'approved') return study.applicationStatus === '승인'
     if (appliedTab.value === 'rejected') return study.applicationStatus === '거절'
     return true
@@ -243,79 +244,85 @@ const goToStudyDetail = (studyId) => {
   }
 }
 
+const fetchAppliedStudies = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      appliedStudies.value = []
+      return
+    }
+    const res = await axios.get('http://localhost:3000/study-application/my', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    // 데이터 가공: StudyApplication + Study join 구조
+    appliedStudies.value = (res.data.data || []).map(app => {
+      const s = app.Study || {}
+      // 상태 한글 변환
+      let statusKor = '대기'
+      if (app.status === 'accepted') statusKor = '승인'
+      else if (app.status === 'rejected') statusKor = '거절'
+      return {
+        id: s.id,
+        title: s.title,
+        content: s.description,
+        currentMembers: s.current_participants,
+        maxMembers: s.max_participants,
+        category: s.Category?.name || '',
+        city: s.City?.name || '',
+        district: s.District?.name || '',
+        town: s.Town?.name || '',
+        thumbnail: (s.StudyThumbnails && s.StudyThumbnails[0]?.path) || logoImage,
+        applicationStatus: statusKor, // '승인', '거절', '대기'
+        isImageLoading: true
+      }
+    })
+  } catch {
+    appliedStudies.value = []
+  }
+}
+
+const fetchCreatedStudies = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      createdStudies.value = []
+      return
+    }
+    const res = await axios.get('http://localhost:3000/study-application/my-created', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    // 데이터 가공: Study join 구조
+    createdStudies.value = (res.data.data || []).map(s => {
+      return {
+        id: s.id,
+        title: s.title,
+        content: s.description,
+        currentMembers: s.current_participants,
+        maxMembers: s.max_participants,
+        category: s.Category?.name || '',
+        city: s.City?.name || '',
+        district: s.District?.name || '',
+        town: s.Town?.name || '',
+        thumbnail: (s.StudyThumbnails && s.StudyThumbnails[0]?.path) || logoImage,
+        status: s.status || '',
+        isImageLoading: true
+      }
+    })
+  } catch {
+    createdStudies.value = []
+  }
+}
+
 // 초기 데이터 로드
-onMounted(() => {
-  // TODO: API 호출로 대체
-  // 임시 데이터
+onMounted(async () => {
+  // 프로필 정보는 임시 데이터 유지
   profile.value = {
     nickname: '홍길동',
     email: 'hong@example.com',
     phone: '010-1234-5678'
   }
-
-  createdStudies.value = [
-    {
-      id: 1,
-      title: '프로그래밍 스터디',
-      content: '함께 프로그래밍을 배우고 실력을 향상시켜요!',
-      thumbnail: 'https://picsum.photos/400/300',
-      currentMembers: 3,
-      maxMembers: 5,
-      status: '모집중',
-      isImageLoading: true
-    },
-    {
-      id: 2,
-      title: '디자인 스터디',
-      content: 'UI/UX 디자인을 함께 배워요',
-      thumbnail: 'https://picsum.photos/400/301',
-      currentMembers: 5,
-      maxMembers: 5,
-      status: '모집완료',
-      isImageLoading: true
-    }
-  ]
-
-  appliedStudies.value = [
-    {
-      id: 3,
-      title: '알고리즘 스터디',
-      content: '코딩 테스트 대비 알고리즘 문제 풀이',
-      thumbnail: 'https://picsum.photos/400/302',
-      currentMembers: 4,
-      maxMembers: 6,
-      applicationStatus: '승인대기',
-      isImageLoading: true
-    },
-    {
-      id: 4,
-      title: '영어 회화 스터디',
-      content: '매일 영어로 대화하며 실력 향상',
-      thumbnail: 'https://picsum.photos/400/303',
-      currentMembers: 3,
-      maxMembers: 4,
-      applicationStatus: '승인',
-      isImageLoading: true
-    },
-    {
-      id: 5,
-      title: '마케팅 스터디',
-      content: '디지털 마케팅 전략과 실전 사례',
-      thumbnail: 'https://picsum.photos/400/304',
-      currentMembers: 6,
-      maxMembers: 6,
-      applicationStatus: '거절',
-      isImageLoading: true
-    }
-  ]
-
-  // Add preload link for logo image
-  const link = document.createElement('link')
-  link.rel = 'preload'
-  link.as = 'image'
-  link.href = logoImage
-  document.head.appendChild(link)
-
+  await fetchCreatedStudies()
+  await fetchAppliedStudies()
   // 이미지 사전 로드
   const preloadImages = (studies) => {
     studies.forEach(study => {
@@ -332,7 +339,6 @@ onMounted(() => {
       }
     })
   }
-
   preloadImages(createdStudies.value)
   preloadImages(appliedStudies.value)
 })
@@ -883,7 +889,7 @@ const handleImageError = (study) => {
   color: #2e7d32;
 }
 
-.study-status.승인대기 {
+.study-status.대기 {
   background-color: #fff3e0;
   color: #f57c00;
 }

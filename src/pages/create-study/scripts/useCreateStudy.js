@@ -44,10 +44,12 @@ export const useCreateStudy = () => {
       // FormData 객체 생성
       const submitData = new FormData()
       submitData.append('title', formData.value.title)
-      submitData.append('content', formData.value.content)
-      submitData.append('startDate', formData.value.startDate)
-      submitData.append('endDate', formData.value.endDate)
-      submitData.append('maxMembers', formData.value.maxMembers)
+      submitData.append('description', formData.value.content)
+      submitData.append('start_date', formData.value.startDate)
+      submitData.append('end_date', formData.value.endDate)
+      submitData.append('max_participants', formData.value.maxMembers)
+      submitData.append('current_participants', 1)
+      submitData.append('category_id', formData.value.categoryId)
       submitData.append('thumbnail', formData.value.thumbnail)
       submitData.append('city_id', formData.value.city_id)
       submitData.append('district_id', formData.value.district_id)
@@ -55,6 +57,7 @@ export const useCreateStudy = () => {
 
       const response = await axios.post('http://localhost:3000/study', submitData, {
         headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
         }
       })

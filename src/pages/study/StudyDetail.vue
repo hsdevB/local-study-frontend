@@ -3,7 +3,7 @@
     <!-- 메인 콘텐츠 영역 -->
     <main class="main-content">
       <!-- 상단 영역 -->
-      <div class="content-header">
+      <div class="content-header flex-header">
         <h2 class="category-title">{{ selectedCategory?.name }} 스터디</h2>
       </div>
 
@@ -12,56 +12,73 @@
         <!-- 좌측 영역 -->
         <div class="left-section">
           <!-- 썸네일 영역 -->
-          <div class="thumbnail-section">
+          <div class="thumbnail-container">
+            <div v-show="isImageLoading" class="study-thumbnail-skeleton">
+              <div class="skeleton-content"></div>
+            </div>
             <template v-if="isEditing">
-              <div class="thumbnail-wrapper" style="position: relative; width: 100%; height: 100%;">
-                <template v-if="editedStudy.thumbnail && !thumbnailDeleted">
-                  <img :src="editedStudy.thumbnail" alt="썸네일 미리보기" class="study-thumbnail">
-                  <button v-if="editedStudy.thumbnail" class="delete-thumbnail" @click.stop="deleteThumbnail" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; background-color: #eee5dd; border: 1px solid #e3d8ce; color: #6f4e37; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1; font-size: 1.2rem; font-weight: 700; line-height: 1; padding: 0;">×</button>
-                </template>
-                <template v-else>
-                  <div class="thumbnail-upload-empty" @click="triggerFileInput" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #8b6b4a; font-size: 1rem; background: #faf7f5; border-radius: 8px; cursor: pointer; border: 1.5px dashed #e3d8ce;">사진 등록</div>
-                </template>
-                <input type="file" ref="fileInput" @change="handleThumbnailChange" accept="image/*" style="display: none">
-              </div>
+              <template v-if="!thumbnailDeleted && editedStudy.thumbnail && editedStudy.thumbnail !== logoImage">
+                <img :src="editedStudy.thumbnail" alt="썸네일 미리보기" class="study-thumbnail" @load="handleImageLoad">
+                <button class="delete-thumbnail" @click.stop="deleteThumbnail" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; background-color: #eee5dd; border: 1px solid #e3d8ce; color: #6f4e37; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1; font-size: 1.2rem; font-weight: 700; line-height: 1; padding: 0;">×</button>
+              </template>
+              <template v-else>
+                <div class="thumbnail-upload-empty" @click="triggerFileInput" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #8b6b4a; font-size: 1rem; background: #faf7f5; border-radius: 8px; cursor: pointer; border: 1.5px dashed #e3d8ce;">사진 등록</div>
+              </template>
+              <input type="file" ref="fileInput" @change="handleThumbnailChange" accept="image/*" style="display: none">
             </template>
             <template v-else>
-              <div class="thumbnail-container">
-                <div v-show="isImageLoading" class="study-thumbnail-skeleton">
-                  <div class="skeleton-content"></div>
-                </div>
-                <img 
-                  v-show="!isImageLoading"
-                  :src="study.StudyThumbnails?.[0]?.path || logoImage" 
-                  :alt="study.title" 
-                  class="study-thumbnail" 
-                  loading="lazy" 
-                  decoding="async" 
-                  fetchpriority="high" 
-                  width="800" 
-                  height="480" 
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  @load="handleImageLoad"
-                  @error="handleImageError"
-                >
-              </div>
+              <img 
+                v-show="!isImageLoading"
+                :src="(study.StudyThumbnails && study.StudyThumbnails[0] && study.StudyThumbnails[0].path) ? study.StudyThumbnails[0].path : logoImage"
+                :alt="study.title" 
+                class="study-thumbnail" 
+                loading="lazy" 
+                decoding="async" 
+                fetchpriority="high" 
+                width="800" 
+                height="480" 
+                sizes="(max-width: 768px) 100vw, 50vw"
+                @load="handleImageLoad"
+                @error="handleImageError"
+              >
             </template>
           </div>
           <!-- 참여자 목록 -->
+          <nav class="participants-tabs-nav">
+            <ul>
+              <li :class="{active: participantsTab === 'list'}" @click="participantsTab = 'list'">참여자 목록</li>
+              <li v-if="isAuthor" :class="{active: participantsTab === 'manage'}" @click="participantsTab = 'manage'">신청 관리</li>
+            </ul>
+          </nav>
           <div class="participants-section">
             <div class="participants-header">
-              <h3>참여자 목록</h3>
-              <span class="participants-count">{{ study.participants?.length || 0 }}/{{ study.maxMembers }}명</span>
+              <h3 v-if="participantsTab === 'list'">참여자 목록</h3>
+              <h3 v-else>신청 관리</h3>
+              <span v-if="participantsTab === 'list'" class="participants-count">{{ study.participants?.length || 0 }}/{{ study.maxMembers }}명</span>
             </div>
-            <ul class="participants-list">
-              <li v-for="participant in study.participants" :key="participant.nickname" class="participant-item">
-                <div class="name-role">
-                  <span class="participant-name">{{ participant.nickname }}</span>
-                  <span class="participant-role" v-if="participant.isAuthor">👑</span>
-                </div>
-                <button v-if="isAuthor && !participant.isAuthor && isEditing" class="kick-btn" @click="kickParticipant(participant)">추방</button>
-              </li>
-            </ul>
+            <div v-if="participantsTab === 'list'">
+              <ul class="participants-list">
+                <li v-for="participant in study.participants" :key="participant.nickname" class="participant-item">
+                  <div class="name-role">
+                    <span class="participant-name">{{ participant.nickname }}</span>
+                    <span class="participant-role" v-if="participant.isAuthor">👑</span>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div v-else>
+              <div v-if="applicants.length === 0" class="no-applicants">신청자가 없습니다.</div>
+              <ul v-else class="applicant-list">
+                <li v-for="app in applicants" :key="app.id" class="applicant-item">
+                  <span class="applicant-nickname">{{ app.User?.nickname || '알 수 없음' }}</span>
+                  <!-- <span class="applicant-status" :class="app.status">{{ statusKor(app.status) }}</span> -->
+                  <div class="btn-group" v-show="app.status === 'pending'">
+                    <button class="approve-btn" @click="handleApprove(app.id)">승인</button>
+                    <button class="reject-btn" @click="handleReject(app.id)">거절</button>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -97,7 +114,7 @@
                 </select>
               </div>
               <div class="content-members">
-                <span class="info-label">총 인원</span>
+                <span class="info-label">최대 인원</span>
                 <span class="info-content">
                   <i class="fas fa-users"></i>
                   <template v-if="!isEditing">
@@ -207,28 +224,26 @@
               </template>
             </template>
             <template v-else>
-              <button 
-                v-if="isLoggedIn && !isParticipant" 
+              <button
+                v-if="isLoggedIn && !applicationForThisStudy"
                 class="join-btn"
                 @click="handleJoinStudy"
                 :disabled="study.currentMembers >= study.maxMembers"
-              >
-                참가 신청
-              </button>
-              <button 
-                v-else-if="isLoggedIn && isParticipant" 
+              >참여 신청</button>
+              <template v-else-if="isLoggedIn && applicationForThisStudy && applicationForThisStudy.status === 'pending'">
+                <button class="join-btn" disabled>승인 대기중</button>
+                <button class="leave-btn" @click="handleCancelApplication">참여 취소</button>
+              </template>
+              <button
+                v-else-if="isLoggedIn && applicationForThisStudy && applicationForThisStudy.status === 'accepted'"
                 class="leave-btn"
                 @click="handleLeaveStudy"
-              >
-                참가 취소
-              </button>
-              <button 
-                v-else 
+              >참여 취소</button>
+              <button
+                v-else-if="!isLoggedIn"
                 class="login-btn"
                 @click="goToLogin"
-              >
-                로그인하고 참가하기
-              </button>
+              >로그인하고 참가하기</button>
             </template>
           </div>
         </div>
@@ -277,6 +292,10 @@ const fileInput = ref(null)
 const originalParticipants = ref([])
 const isImageLoading = ref(true)
 const errorMessage = ref('')
+const applicationForThisStudy = ref(null)
+const showManageModal = ref(false)
+const applicants = ref([])
+const participantsTab = ref('list')
 errorMessage.value = ''
 
 // 날짜 포맷팅 함수
@@ -332,18 +351,16 @@ const handleImageError = () => {
 // 스터디 상세 정보 가져오기
 const fetchStudyDetail = async () => {
   try {
-    const studyId = parseInt(route.params.id)
-    isImageLoading.value = true
+    const res = await axios.get(`http://localhost:3000/study/${route.params.id}`)
+    const s = res.data.data.study
+    const studyUserId = res.data.data.study.User?.userId // 작성자 userId
+    const myUserId = localStorage.getItem('userId') // 현재 로그인한 내 userId
 
-    // 실제 API 호출
-    const response = await axios.get(`http://localhost:3000/study/${studyId}`)
-    if (!response.data.success) {
-      errorMessage.value = response.data.message || '스터디 상세 정보 로딩 실패'
-      return
-    }
-    const s = response.data.data.study
+    // StudyThumbnails 가공: 없거나 비어있으면 기본 이미지
+    const thumbnails = (s.StudyThumbnails && s.StudyThumbnails.length > 0)
+      ? s.StudyThumbnails
+      : [{ path: logoImage }]
 
-    // Study 객체 매핑
     study.value = {
       id: s.id,
       title: s.title,
@@ -351,30 +368,27 @@ const fetchStudyDetail = async () => {
       startDate: s.start_date,
       endDate: s.end_date,
       maxMembers: s.max_participants,
-      currentMembers: (s.participants ? s.participants.length : s.current_participants),
+      currentMembers: s.participants ? s.participants.length : s.current_participants,
       category_id: s.Category?.id,
-      city: s.City?.name,
-      district: s.District?.name,
-      town: s.Town?.name,
-      author: s.User?.nickname,
-      StudyThumbnails: s.StudyThumbnails || [{ path: logoImage }],
-      participants: s.participants || [],
       location: {
         sido: s.City?.name,
         sigungu: s.District?.name,
         dong: s.Town?.name
-      }
+      },
+      StudyThumbnails: thumbnails,
+      participants: s.participants || [],
     }
+    // userId로 작성자 판별
+    isAuthor.value = studyUserId && myUserId && studyUserId === myUserId
+    isParticipant.value = res.data.data.isParticipant || false
 
-    // 카테고리 선택
-    if (s.Category) {
-      selectedCategory.value = s.Category
+    if (study.value.category_id) {
+      selectedCategory.value = categories.value.find(c => c.id === study.value.category_id)
     }
-
-    isImageLoading.value = !study.value.StudyThumbnails.length
+    // 내 신청 목록 최신화
+    await fetchMyApplications()
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || '스터디 상세 정보 로딩 실패'
-    isImageLoading.value = false
+    errorMessage.value = error.response?.data?.message || '스터디 상세 정보 불러오기 실패'
   }
 }
 
@@ -408,11 +422,20 @@ const handleJoinStudy = async () => {
     router.push('/login')
     return
   }
-  
+
   try {
-    // TODO: 실제 API 호출로 대체
-    isParticipant.value = true
-    study.value.currentMembers++
+    const token = localStorage.getItem('token')
+    await axios.post(
+      `http://localhost:3000/study-application/${study.value.id}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    )
+    // 참가신청 성공 후 최신 데이터로 갱신
+    await fetchStudyDetail()
     alert('스터디 참가 신청이 완료되었습니다.')
   } catch (error) {
     errorMessage.value = error.response?.data?.message || '스터디 참가 실패'
@@ -422,7 +445,7 @@ const handleJoinStudy = async () => {
 // 스터디 참가 취소 처리
 const handleLeaveStudy = async () => {
   try {
-    // TODO: 실제 API 호출로 대체
+    await axios.delete(`http://localhost:3000/study/${study.value.id}/apply`)
     isParticipant.value = false
     study.value.currentMembers--
     alert('스터디 참가가 취소되었습니다.')
@@ -437,7 +460,24 @@ const goToLogin = () => {
 }
 
 // 수정 시작
-const startEditing = () => {
+const startEditing = async () => {
+  // 시/도 id 찾기
+  const sidoObj = sidoList.value.find(s => s.name === study.value.location?.sido);
+  const sidoId = sidoObj ? sidoObj.id : '';
+  let sigunguId = '';
+  let dongId = '';
+
+  if (sidoId) {
+    await fetchSigunguList(sidoId);
+    const sigunguObj = sigunguList.value.find(s => s.name === study.value.location?.sigungu);
+    sigunguId = sigunguObj ? sigunguObj.id : '';
+    if (sigunguId) {
+      await fetchDongList(sigunguId);
+      const dongObj = dongList.value.find(d => d.name === study.value.location?.dong);
+      dongId = dongObj ? dongObj.id : '';
+    }
+  }
+
   editedStudy.value = {
     title: study.value.title,
     category_id: study.value.category_id,
@@ -445,15 +485,15 @@ const startEditing = () => {
     startDate: study.value.startDate,
     endDate: study.value.endDate,
     content: study.value.content,
-    sido: study.value.sido || '',
-    sigungu: study.value.sigungu || '',
-    dong: study.value.dong || '',
+    sido: sidoId,
+    sigungu: sigunguId,
+    dong: dongId,
     thumbnail: study.value.StudyThumbnails[0]?.path || logoImage
-  }
-  originalThumbnail.value = study.value.StudyThumbnails[0]?.path || logoImage
-  thumbnailDeleted.value = false
-  originalParticipants.value = JSON.parse(JSON.stringify(study.value.participants))
-  isEditing.value = true
+  };
+  originalThumbnail.value = study.value.StudyThumbnails[0]?.path || logoImage;
+  thumbnailDeleted.value = false;
+  originalParticipants.value = JSON.parse(JSON.stringify(study.value.participants));
+  isEditing.value = true;
 }
 
 // 수정 취소
@@ -495,6 +535,10 @@ const handleDeleteStudy = async () => {
 // 스터디 정보 업데이트
 const handleUpdateStudy = async () => {
   try {
+    // 썸네일이 삭제되었거나 비어 있으면 기본 이미지로 대체
+    if (thumbnailDeleted.value || !editedStudy.value.thumbnail) {
+      editedStudy.value.thumbnail = logoImage;
+    }
     // TODO: 실제 API 호출로 대체
     study.value.title = editedStudy.value.title
     study.value.category_id = editedStudy.value.category_id
@@ -507,7 +551,10 @@ const handleUpdateStudy = async () => {
       sigungu: editedStudy.value.sigungu,
       dong: editedStudy.value.dong
     }
+    // 썸네일도 반영
+    study.value.StudyThumbnails = [{ path: editedStudy.value.thumbnail }]
     isEditing.value = false
+    thumbnailDeleted.value = false;
     alert('스터디 정보가 수정되었습니다.')
   } catch (error) {
     errorMessage.value = error.response?.data?.message || '스터디 수정 실패'
@@ -578,8 +625,8 @@ const triggerFileInput = () => {
 }
 
 const deleteThumbnail = () => {
-  editedStudy.value.thumbnail = ''
-  thumbnailDeleted.value = true
+  thumbnailDeleted.value = true;
+  editedStudy.value.thumbnail = '';
 }
 
 const kickParticipant = (participant) => {
@@ -616,6 +663,83 @@ const fetchDongList = async (districtId) => {
     errorMessage.value = error.response?.data?.message || '읍/면/동 목록 불러오기 실패'
   }
 }
+
+const fetchMyApplications = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const res = await axios.get('http://localhost:3000/study-application/my', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    // 내 신청 목록에서 현재 스터디 id와 일치하는 신청 찾기
+    const found = res.data.data.find(app => app.study_id === study.value.id)
+    applicationForThisStudy.value = found || null
+  } catch  {
+    applicationForThisStudy.value = null
+  }
+}
+
+const handleCancelApplication = async () => {
+  if (!applicationForThisStudy.value) return
+  try {
+    const token = localStorage.getItem('token')
+    await axios.delete(
+      `http://localhost:3000/study-application/${applicationForThisStudy.value.id}`,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    )
+    await fetchStudyDetail()
+    alert('참여 신청이 취소되었습니다.')
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || '참여 신청 취소 실패'
+  }
+}
+
+const fetchApplicants = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const res = await axios.get(`http://localhost:3000/study-application/study/${study.value.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    applicants.value = res.data.data || []
+  } catch {
+    applicants.value = []
+  }
+}
+
+const handleApprove = async (applicationId) => {
+  try {
+    const token = localStorage.getItem('token')
+    await axios.patch(`http://localhost:3000/study-application/${applicationId}/status`, { status: 'accepted' }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    await fetchApplicants()
+    await fetchStudyDetail()
+  } catch {}
+}
+
+const handleReject = async (applicationId) => {
+  try {
+    const token = localStorage.getItem('token')
+    await axios.patch(`http://localhost:3000/study-application/${applicationId}/status`, { status: 'rejected' }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    await fetchApplicants()
+    await fetchStudyDetail()
+  } catch {}
+}
+
+const statusKor = (status) => {
+  if (status === 'accepted') return '승인'
+  if (status === 'rejected') return '거절'
+  return '대기'
+}
+
+watch(participantsTab, async (tab) => {
+  if (tab === 'manage') {
+    await fetchApplicants()
+  }
+})
 </script>
 
 <style scoped>
@@ -832,13 +956,13 @@ const fetchDongList = async (districtId) => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0;
   position: relative;
 }
 
 .thumbnail-section {
   width: 100%;
-  aspect-ratio: 4/4;
+  aspect-ratio: 5/4;
   overflow: hidden;
   border-radius: 8px;
 }
@@ -900,11 +1024,9 @@ const fetchDongList = async (districtId) => {
   border-radius: 8px;
   padding: 1.5rem;
   border: 1px solid #eee5dd;
-  position: absolute;
-  bottom: 1rem;
-  left: 0;
-  right: 0;
+  position: static;
   margin-bottom: 0.25rem;
+  margin-top: 0;
 }
 
 .participants-section .participants-header {
@@ -1474,6 +1596,7 @@ const fetchDongList = async (districtId) => {
   color: #8b6b4a;
   flex-shrink: 0;
   text-align: right;
+  margin-left: 0.5rem;
 }
 
 .info-content {
@@ -1640,5 +1763,190 @@ const fetchDongList = async (districtId) => {
 .kick-btn:hover {
   background: #e3d8ce;
   color: #4b3621;
+}
+
+.manage-btn {
+  margin-left: auto;
+  padding: 0.4rem 1.2rem;
+  background-color: #6f4e37;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.manage-btn:hover {
+  background-color: #8b6b4a;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  min-width: 240px;
+  max-width: 90vw;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  position: relative;
+}
+
+.applicant-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 1rem 0;
+}
+
+.applicant-list:hover {
+  background-color: #f5f2ef;
+}
+
+.applicant-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.applicant-item:hover .btn-group {
+  display: flex;
+}
+
+.applicant-nickname {
+  font-weight: 400;
+  color: #4b3621;
+  font-size: 1rem;
+}
+
+.applicant-status {
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.2rem 0.8rem;
+  margin-right: 0.5rem;
+}
+
+.applicant-status.accepted {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.applicant-status.rejected {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.applicant-status.pending {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.approve-btn, .reject-btn {
+  padding: 0.1rem 0.3rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  height: 28px;
+  min-width: 48px;
+}
+
+.approve-btn {
+  background-color: #2e7d32;
+  color: #fff;
+}
+
+.approve-btn:hover {
+  background-color: #388e3c;
+}
+
+.reject-btn {
+  background-color: #c62828;
+  color: #fff;
+}
+
+.reject-btn:hover {
+  background-color: #ad1720;
+}
+
+.close-btn {
+  margin-top: 1.5rem;
+  padding: 0.5rem 2rem;
+  background-color: #eee5dd;
+  color: #6f4e37;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.close-btn:hover {
+  background-color: #e3d8ce;
+}
+
+.no-applicants {
+  color: #8b6b4a;
+  font-size: 1rem;
+  margin: 2rem 0 1rem 0;
+  text-align: center;
+}
+
+.flex-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-group {
+  display: none;
+  gap: 0.5rem;
+}
+
+.applicant-item:hover .btn-group {
+  display: flex;
+}
+
+.participants-tabs-nav {
+  margin-bottom: 0;
+  margin-top: 3rem;
+}
+.participants-tabs-nav ul {
+  display: flex;
+  gap: 2rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.participants-tabs-nav li {
+  cursor: pointer;
+  padding: 0.7rem 0;
+  font-weight: 600;
+  color: #8b6b4a;
+  border-bottom: 2.5px solid transparent;
+  transition: color 0.2s, border-bottom 0.2s;
+}
+.participants-tabs-nav li.active {
+  color: #6f4e37;
+  border-bottom: 2.5px solid #6f4e37;
 }
 </style> 

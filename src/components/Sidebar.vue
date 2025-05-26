@@ -116,14 +116,50 @@ const fetchUserProfile = async () => {
   }
 }
 
+const fetchAppliedStudies = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      appliedStudies.value = []
+      return
+    }
+    const res = await axios.get('http://localhost:3000/study-application/my', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    appliedStudies.value = res.data.data || []
+  } catch {
+    appliedStudies.value = []
+  }
+}
+
+const fetchCreatedStudies = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      createdStudies.value = []
+      return
+    }
+    const res = await axios.get('http://localhost:3000/study-application/my-created', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    createdStudies.value = res.data.data || []
+  } catch {
+    createdStudies.value = []
+  }
+}
+
 // 토큰 변경 감지
 watch(() => localStorage.getItem('token'), (newToken) => {
   if (newToken) {
     fetchUserProfile()
+    fetchAppliedStudies()
+    fetchCreatedStudies()
   } else {
     isLoggedIn.value = false
     userProfile.value = null
     username.value = ''
+    appliedStudies.value = []
+    createdStudies.value = []
   }
 }, { immediate: true })
 
@@ -163,6 +199,8 @@ const logout = async () => {
 onMounted(async () => {
   await fetchCategories()
   await fetchUserProfile()
+  await fetchAppliedStudies()
+  await fetchCreatedStudies()
 })
 </script>
 
