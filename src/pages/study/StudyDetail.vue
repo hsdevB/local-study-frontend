@@ -595,6 +595,7 @@ const handleUpdateStudy = async () => {
         );
       } catch (e) {
         // 개별 에러는 무시하고 계속 진행
+        console.error(e);
       }
     }
     kickedUserIds.value = [];
@@ -812,6 +813,7 @@ const handleKickParticipant = async (userId) => {
     study.value.participants = study.value.participants.filter(p => p.userId !== userId);
     alert('참여자를 추방했습니다.');
   } catch (error) {
+    console.error(error);
     alert('참여자 추방에 실패했습니다.');
   }
 };

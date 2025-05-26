@@ -204,11 +204,13 @@ onMounted(async () => {
 
   // 커스텀 이벤트 리스너 등록
   window.addEventListener('refreshSidebar', refreshSidebar)
+  window.addEventListener('profile-updated', refreshSidebar)
 })
 
 const refreshSidebar = async () => {
   await fetchAppliedStudies()
   await fetchCreatedStudies()
+  await fetchUserProfile()
 }
 
 onUnmounted(() => {

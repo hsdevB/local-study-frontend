@@ -10,20 +10,77 @@
           </div>
           <div class="profile-form-container">
             <form @submit.prevent="updateProfile" class="profile-form">
-              <div class="form-group">
-                <label for="nickname">닉네임</label>
-                <input type="text" id="nickname" v-model="profile.nickname" class="form-control">
+              <!-- 이메일 -->
+              <div class="mb-3">
+                <label for="email" class="form-label">이메일</label>
+                <div class="input-group">
+                  <input id="email" type="email" class="form-control" v-model="profile.email" :disabled="emailVerificationStatus === 'verified'" required />
+                  <button type="button" class="btn btn-verify" @click="sendEmailVerification" :disabled="emailVerificationStatus === 'verified'">이메일 인증</button>
+                </div>
+                <div v-if="emailVerificationStatus !== 'idle'" class="mt-1">
+                  <small :class="{
+                    'text-success': emailVerificationStatus === 'verified',
+                    'text-danger': emailVerificationStatus === 'error',
+                    'text-secondary': emailVerificationStatus === 'sending' || emailVerificationStatus === 'verifying'
+                  }">
+                    {{ emailVerificationMessage }}
+                  </small>
+                </div>
+                <div v-if="showEmailCodeInput && emailVerificationStatus !== 'verified'" class="input-group mt-2">
+                  <input type="text" class="form-control" v-model="emailVerificationCode" placeholder="인증 코드 입력" maxlength="6" />
+                  <button type="button" class="btn btn-verify" @click="verifyEmailCode">인증 확인</button>
+                </div>
+                <div v-if="emailVerificationStatus === 'verified'" class="mt-1">
+                  <small class="text-success">이메일 인증이 완료되었습니다.</small>
+                </div>
               </div>
-              <div class="form-group">
-                <label for="email">이메일</label>
-                <input type="email" id="email" v-model="profile.email" class="form-control">
+              <!-- 닉네임 -->
+              <div class="mb-3">
+                <label for="nickname" class="form-label">닉네임</label>
+                <div class="input-group">
+                  <input id="nickname" type="text" class="form-control" v-model="profile.nickname" required />
+                  <button type="button" class="btn btn-verify" @click="checkNickname">중복 확인</button>
+                </div>
+                <div v-if="nicknameCheckStatus !== 'idle'" class="mt-1">
+                  <small :class="{
+                    'text-success': nicknameCheckStatus === 'available',
+                    'text-danger': nicknameCheckStatus === 'exists' || nicknameCheckStatus === 'error',
+                    'text-secondary': nicknameCheckStatus === 'checking'
+                  }">
+                    {{ nicknameCheckMessage }}
+                  </small>
+                </div>
               </div>
-              <div class="form-group">
-                <label for="phone">전화번호</label>
-                <input type="tel" id="phone" v-model="profile.phone" class="form-control">
+              <!-- 생년월일 -->
+              <div class="mb-3">
+                <label for="birthDate" class="form-label">생년월일</label>
+                <div class="date-picker-wrapper" @click="focusBirthDateInput">
+                  <input
+                    id="birthDate"
+                    type="date"
+                    class="form-control date-input"
+                    v-model="profile.birth"
+                    :max="maxDate"
+                    required
+                    ref="birthDateInput"
+                    style="opacity:0;position:absolute;top:0;left:0;width:100%;height:100%;z-index:3;cursor:pointer;"
+                  />
+                  <div class="date-display" :class="{ 'placeholder': !profile.birth }">
+                    {{ profile.birth ? formatBirthDate(profile.birth) : '생년월일 선택' }}
+                  </div>
+                </div>
               </div>
-              <button type="submit" class="btn btn-primary">정보 수정</button>
+              <!-- 휴대폰번호 -->
+              <div class="mb-3">
+                <label for="phone" class="form-label">휴대폰 번호</label>
+                <input id="phone" type="tel" class="form-control" v-model="profile.phone" required />
+              </div>
+              <button type="submit" class="btn btn-primary w-100 mb-3">정보 수정</button>
             </form>
+            <!-- 비밀번호 변경 버튼 (오른쪽 하단) -->
+            <div class="d-flex justify-content-end mt-2">
+              <button class="btn btn-link text-decoration-none" @click="showPasswordModal = true">비밀번호 변경</button>
+            </div>
           </div>
         </div>
 
@@ -155,6 +212,25 @@
         </div>
       </main>
     </div>
+    <!-- 비밀번호 변경 전용 모달 (오버레이) -->
+    <div v-if="showPasswordModal" class="modal-overlay password-modal-overlay">
+      <div class="modal-content password-modal-content">
+        <h4>비밀번호 변경</h4>
+        <input type="password" v-model="currentPassword" placeholder="현재 비밀번호" class="form-control" style="margin-bottom: 0.5rem;">
+        <input type="password" v-model="newPassword" placeholder="새 비밀번호" class="form-control" style="margin-bottom: 0.5rem;">
+        <input type="password" v-model="confirmPassword" placeholder="비밀번호 확인" class="form-control" style="margin-bottom: 0.5rem;">
+        <div v-if="confirmPassword" class="mt-1">
+          <small :class="{ 'text-success': newPassword === confirmPassword, 'text-danger': newPassword !== confirmPassword }">
+            {{ newPassword === confirmPassword ? '비밀번호가 일치합니다.' : '비밀번호가 일치하지 않습니다.' }}
+          </small>
+        </div>
+        <div v-if="passwordError" class="text-danger">{{ passwordError }}</div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <button class="btn btn-primary" @click="changePassword">저장</button>
+          <button class="btn btn-secondary" @click="showPasswordModal = false">취소</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -181,10 +257,25 @@ watch(() => route.query.tab, (newTab) => {
 
 // 프로필 정보
 const profile = ref({
+  userId: '',
   nickname: '',
   email: '',
-  phone: ''
+  phone: '',
+  birth: ''
 })
+const emailVerificationStatus = ref('idle')
+const emailVerificationMessage = ref('')
+const showEmailCodeInput = ref(false)
+const emailVerificationCode = ref('')
+const nicknameCheckStatus = ref('idle')
+const nicknameCheckMessage = ref('')
+const showPasswordModal = ref(false)
+const newPassword = ref('')
+const confirmPassword = ref('')
+const passwordError = ref('')
+const maxDate = ref('')
+const birthDateInput = ref(null)
+const currentPassword = ref('')
 
 // 내가 만든 스터디 목록
 const createdStudies = ref([])
@@ -222,10 +313,32 @@ const filteredAppliedStudies = computed(() => {
 })
 
 // 프로필 정보 수정
-const updateProfile = () => {
-  // TODO: API 호출로 대체
-  alert('프로필 정보가 수정되었습니다.')
-}
+const updateProfile = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+    const res = await axios.put('http://localhost:3000/user/info', {
+      nickname: profile.value.nickname,
+      email: profile.value.email,
+      phoneNumber: profile.value.phone,
+      birthDate: profile.value.birth
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.data.success) {
+      alert('프로필 정보가 수정되었습니다.');
+      window.dispatchEvent(new Event('profile-updated'));
+    } else {
+      alert(res.data.message || '프로필 정보 수정 중 오류가 발생했습니다.');
+    }
+  } catch (err) {
+    console.error('프로필 정보 수정 중 오류:', err);
+    alert('프로필 정보 수정 중 오류가 발생했습니다.');
+  }
+};
 
 // 스터디 상세 페이지로 이동
 const goToStudyDetail = (studyId) => {
@@ -328,33 +441,57 @@ const fetchCreatedStudies = async () => {
 
 // 초기 데이터 로드
 onMounted(async () => {
-  // 프로필 정보는 임시 데이터 유지
-  profile.value = {
-    nickname: '홍길동',
-    email: 'hong@example.com',
-    phone: '010-1234-5678'
+  // 오늘 날짜까지만 선택 가능
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  maxDate.value = `${yyyy}-${mm}-${dd}`;
+
+  // 로그인한 유저의 정보를 가져오기
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('토큰이 없습니다.');
+      return;
+    }
+    const res = await axios.get('http://localhost:3000/user/profile', { headers: { Authorization: `Bearer ${token}` } });
+    if (res.data.success) {
+      profile.value = {
+        userId: res.data.data.userId,
+        nickname: res.data.data.nickname,
+        email: res.data.data.email,
+        birth: res.data.data.birthDate,
+        phone: res.data.data.phoneNumber
+      };
+    } else {
+      console.error('프로필 정보를 가져오는데 실패했습니다.');
+    }
+  } catch (err) {
+    console.error('프로필 정보를 가져오는 중 오류가 발생했습니다:', err);
   }
-  await fetchCreatedStudies()
-  await fetchAppliedStudies()
+
+  await fetchCreatedStudies();
+  await fetchAppliedStudies();
   // 이미지 사전 로드
   const preloadImages = (studies) => {
     studies.forEach(study => {
       if (study.thumbnail) {
-        const img = new Image()
+        const img = new Image();
         img.onload = () => {
-          study.isImageLoading = false
-        }
+          study.isImageLoading = false;
+        };
         img.onerror = () => {
-          study.isImageLoading = false
-          study.thumbnail = logoImage
-        }
-        img.src = study.thumbnail
+          study.isImageLoading = false;
+          study.thumbnail = logoImage;
+        };
+        img.src = study.thumbnail;
       }
-    })
-  }
-  preloadImages(createdStudies.value)
-  preloadImages(appliedStudies.value)
-})
+    });
+  };
+  preloadImages(createdStudies.value);
+  preloadImages(appliedStudies.value);
+});
 
 // 이미지 로드 핸들러
 const handleImageLoad = (study) => {
@@ -366,6 +503,107 @@ const handleImageError = (study) => {
   study.isImageLoading = false
   study.thumbnail = logoImage
 }
+
+const focusBirthDateInput = () => {
+  if (birthDateInput.value) birthDateInput.value.showPicker();
+};
+const formatBirthDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+};
+
+const sendEmailVerification = async () => {
+  try {
+    emailVerificationStatus.value = 'sending';
+    emailVerificationMessage.value = '이메일 인증 코드 발송 중...';
+    const res = await axios.post('http://localhost:3000/signup/send-email-code', { email: profile.value.email });
+    if (res.data.success) {
+      emailVerificationStatus.value = 'verifying';
+      emailVerificationMessage.value = '인증 코드가 이메일로 발송되었습니다.';
+      showEmailCodeInput.value = true;
+    } else {
+      emailVerificationStatus.value = 'error';
+      emailVerificationMessage.value = res.data.message || '이메일 인증 코드 발송 중 오류가 발생했습니다.';
+    }
+  } catch (err) {
+    console.error('이메일 인증 코드 발송 중 오류:', err);
+    emailVerificationStatus.value = 'error';
+    emailVerificationMessage.value = '이메일 인증 코드 발송 중 오류가 발생했습니다.';
+  }
+};
+const verifyEmailCode = async () => {
+  try {
+    emailVerificationStatus.value = 'verifying';
+    emailVerificationMessage.value = '인증 코드 확인 중...';
+    const res = await axios.post('http://localhost:3000/signup/verify-email-code', { email: profile.value.email, code: emailVerificationCode.value });
+    if (res.data.success) {
+      emailVerificationStatus.value = 'verified';
+      emailVerificationMessage.value = '이메일 인증이 완료되었습니다.';
+      showEmailCodeInput.value = false;
+    } else {
+      emailVerificationStatus.value = 'error';
+      emailVerificationMessage.value = res.data.message || '인증 코드가 올바르지 않습니다.';
+    }
+  } catch (err) {
+    console.error('이메일 인증 중 오류:', err);
+    emailVerificationStatus.value = 'error';
+    emailVerificationMessage.value = '이메일 인증 중 오류가 발생했습니다.';
+  }
+};
+const checkNickname = async () => {
+  try {
+    nicknameCheckStatus.value = 'checking';
+    nicknameCheckMessage.value = '닉네임 중복 확인 중...';
+    const res = await axios.get(`http://localhost:3000/signup/check-nickname?nickname=${profile.value.nickname}`);
+    if (res.data.available) {
+      nicknameCheckStatus.value = 'available';
+      nicknameCheckMessage.value = '사용 가능한 닉네임입니다.';
+    } else {
+      nicknameCheckStatus.value = 'exists';
+      nicknameCheckMessage.value = '이미 사용 중인 닉네임입니다.';
+    }
+  } catch (err) {
+    console.error('닉네임 중복 확인 중 오류:', err);
+    nicknameCheckStatus.value = 'error';
+    nicknameCheckMessage.value = '닉네임 중복 확인 중 오류가 발생했습니다.';
+  }
+};
+const changePassword = async () => {
+  if (newPassword.value !== confirmPassword.value) {
+    passwordError.value = '비밀번호가 일치하지 않습니다.';
+    return;
+  }
+  if (!currentPassword.value) {
+    passwordError.value = '현재 비밀번호를 입력하세요.';
+    return;
+  }
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      passwordError.value = '로그인이 필요합니다.';
+      return;
+    }
+    const res = await axios.put('http://localhost:3000/user/password', {
+      userId: profile.value.userId,
+      currentPassword: currentPassword.value,
+      newPassword: newPassword.value
+    }, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.data.success) {
+      showPasswordModal.value = false;
+      newPassword.value = '';
+      confirmPassword.value = '';
+      currentPassword.value = '';
+      passwordError.value = '';
+      alert('비밀번호가 변경되었습니다.');
+    } else {
+      passwordError.value = res.data.message || '비밀번호 변경 중 오류가 발생했습니다.';
+    }
+  } catch (err) {
+    console.error('비밀번호 변경 중 오류:', err);
+    passwordError.value = '비밀번호 변경 중 오류가 발생했습니다.';
+  }
+};
 </script>
 
 <style scoped>
@@ -634,7 +872,8 @@ const handleImageError = (study) => {
 }
 
 .profile-form-container {
-  margin-top: 0;  /* Remove the top margin since we're using content-header's margin-bottom */
+  max-width: 520px;
+  margin: 0 auto;
 }
 
 .profile-form {
@@ -915,5 +1154,87 @@ const handleImageError = (study) => {
 .study-status.거절 {
   background-color: #ffebee;
   color: #c62828;
+}
+
+.date-picker-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  max-width: 220px;
+  min-width: 160px;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+.date-display {
+  position: relative;
+  width: 100%;
+  min-width: 120px;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #e3d8ce;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #4b3621;
+  background-color: #fff;
+  transition: all 0.2s ease;
+  line-height: 28px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+.date-display.placeholder {
+  color: #bdbdbd;
+}
+
+.mb-3 > .form-label[for="birthDate"] {
+  display: block;
+  margin-bottom: 0.3rem;
+}
+.date-picker-wrapper {
+  display: block;
+  margin-top: 0.1rem;
+}
+
+.btn-verify {
+  background-color: #6f4e37;
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 1.2rem;
+  font-size: 0.95rem;
+  margin-left: 0.5rem;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-verify:hover {
+  background-color: #8b6b4a;
+  color: white;
+}
+
+.password-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.password-modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  min-width: 400px;
+  max-width: 420px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  position: relative;
 }
 </style>
