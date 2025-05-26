@@ -47,7 +47,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 
@@ -201,6 +201,18 @@ onMounted(async () => {
   await fetchUserProfile()
   await fetchAppliedStudies()
   await fetchCreatedStudies()
+
+  // 커스텀 이벤트 리스너 등록
+  window.addEventListener('refreshSidebar', refreshSidebar)
+})
+
+const refreshSidebar = async () => {
+  await fetchAppliedStudies()
+  await fetchCreatedStudies()
+}
+
+onUnmounted(() => {
+  window.removeEventListener('refreshSidebar', refreshSidebar)
 })
 </script>
 

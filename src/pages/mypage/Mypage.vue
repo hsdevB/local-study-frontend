@@ -79,7 +79,7 @@
                 <h3 class="study-title">{{ study.title }}</h3>
                 <p class="study-content">{{ study.content }}</p>
                 <div class="study-meta">
-                  <span class="study-author">{{ profile.nickname }}</span>
+                  <span class="study-author">{{ study.author }}</span>
                   <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
                 </div>
               </div>
@@ -146,7 +146,7 @@
                 <h3 class="study-title">{{ study.title }}</h3>
                 <p class="study-content">{{ study.content }}</p>
                 <div class="study-meta">
-                  <span class="study-author">{{ profile.nickname }}</span>
+                  <span class="study-author">{{ study.author }}</span>
                   <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
                 </div>
               </div>
@@ -259,7 +259,7 @@ const fetchAppliedStudies = async () => {
       const s = app.Study || {}
       // 상태 한글 변환
       let statusKor = '대기'
-      if (app.status === 'accepted') statusKor = '승인'
+      if (app.status === 'approved') statusKor = '승인'
       else if (app.status === 'rejected') statusKor = '거절'
       return {
         id: s.id,
@@ -273,6 +273,7 @@ const fetchAppliedStudies = async () => {
         town: s.Town?.name || '',
         thumbnail: (s.StudyThumbnails && s.StudyThumbnails[0]?.path) || logoImage,
         applicationStatus: statusKor, // '승인', '거절', '대기'
+        author: s.User?.nickname || '',
         isImageLoading: true
       }
     })
@@ -305,6 +306,7 @@ const fetchCreatedStudies = async () => {
         town: s.Town?.name || '',
         thumbnail: (s.StudyThumbnails && s.StudyThumbnails[0]?.path) || logoImage,
         status: s.status || '',
+        author: s.User?.nickname || '',
         isImageLoading: true
       }
     })

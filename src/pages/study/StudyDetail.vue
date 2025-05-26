@@ -29,7 +29,9 @@
             <template v-else>
               <img 
                 v-show="!isImageLoading"
-                :src="(study.StudyThumbnails && study.StudyThumbnails[0] && study.StudyThumbnails[0].path) ? study.StudyThumbnails[0].path : logoImage"
+                :src="(study.StudyThumbnails && study.StudyThumbnails[0] && study.StudyThumbnails[0].path && study.StudyThumbnails[0].path.startsWith('/images/'))
+                  ? 'http://localhost:3000' + study.StudyThumbnails[0].path
+                  : logoImage"
                 :alt="study.title" 
                 class="study-thumbnail" 
                 loading="lazy" 
@@ -54,24 +56,32 @@
             <div class="participants-header">
               <h3 v-if="participantsTab === 'list'">참여자 목록</h3>
               <h3 v-else>신청 관리</h3>
-              <span v-if="participantsTab === 'list'" class="participants-count">{{ study.participants?.length || 0 }}/{{ study.maxMembers }}명</span>
+              <span v-if="participantsTab === 'list'" class="participants-count">{{ study.currentMembers || 1 }}/{{ study.maxMembers }}명</span>
             </div>
             <div v-if="participantsTab === 'list'">
               <ul class="participants-list">
-                <li v-for="participant in study.participants" :key="participant.nickname" class="participant-item">
+                <li v-for="participant in (study.participants || []).filter(p => 
+                  (p.status === 'approved' || p.isAuthor) && p.status !== 'kicked'
+                )" :key="participant.nickname" class="participant-item">
                   <div class="name-role">
                     <span class="participant-name">{{ participant.nickname }}</span>
                     <span class="participant-role" v-if="participant.isAuthor">👑</span>
                   </div>
+                  <button 
+                    v-if="isEditing && isAuthor && !participant.isAuthor" 
+                    class="kick-btn" 
+                    @click.stop="handleKickParticipant(participant.userId)"
+                  >
+                    추방
+                  </button>
                 </li>
               </ul>
             </div>
             <div v-else>
               <div v-if="applicants.length === 0" class="no-applicants">신청자가 없습니다.</div>
               <ul v-else class="applicant-list">
-                <li v-for="app in applicants" :key="app.id" class="applicant-item">
+                <li v-for="app in applicants.filter(a => a.status === 'pending')" :key="app.id" class="applicant-item">
                   <span class="applicant-nickname">{{ app.User?.nickname || '알 수 없음' }}</span>
-                  <!-- <span class="applicant-status" :class="app.status">{{ statusKor(app.status) }}</span> -->
                   <div class="btn-group" v-show="app.status === 'pending'">
                     <button class="approve-btn" @click="handleApprove(app.id)">승인</button>
                     <button class="reject-btn" @click="handleReject(app.id)">거절</button>
@@ -253,7 +263,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import logoImage from '@/assets/logo.png'
 // import mockStudies from '@/data/mockStudies.json'
@@ -293,9 +303,9 @@ const originalParticipants = ref([])
 const isImageLoading = ref(true)
 const errorMessage = ref('')
 const applicationForThisStudy = ref(null)
-const showManageModal = ref(false)
 const applicants = ref([])
 const participantsTab = ref('list')
+const kickedUserIds = ref([])
 errorMessage.value = ''
 
 // 날짜 포맷팅 함수
@@ -331,10 +341,15 @@ const handleSigunguChange = async () => {
   }
 }
 
-// 이미지 URL이 변경될 때마다 로딩 상태를 초기화
-watch(() => study.value?.StudyThumbnails, () => {
-  isImageLoading.value = true
-})
+// 이미지 URL이 변경될 때마다 로딩 상태를 초기화 (실제 변경 시에만)
+watch(
+  () => study.value?.StudyThumbnails?.[0]?.path,
+  (newPath, oldPath) => {
+    if (newPath && newPath !== oldPath) {
+      isImageLoading.value = true
+    }
+  }
+)
 
 // 이미지 로드 핸들러
 const handleImageLoad = () => {
@@ -353,7 +368,6 @@ const fetchStudyDetail = async () => {
   try {
     const res = await axios.get(`http://localhost:3000/study/${route.params.id}`)
     const s = res.data.data.study
-    const studyUserId = res.data.data.study.User?.userId // 작성자 userId
     const myUserId = localStorage.getItem('userId') // 현재 로그인한 내 userId
 
     // StudyThumbnails 가공: 없거나 비어있으면 기본 이미지
@@ -368,7 +382,9 @@ const fetchStudyDetail = async () => {
       startDate: s.start_date,
       endDate: s.end_date,
       maxMembers: s.max_participants,
-      currentMembers: s.participants ? s.participants.length : s.current_participants,
+      currentMembers: s.participants
+        ? s.participants.filter(p => (p.status === 'approved' || p.isAuthor) && p.status !== 'kicked').length
+        : 1,
       category_id: s.Category?.id,
       location: {
         sido: s.City?.name,
@@ -378,8 +394,9 @@ const fetchStudyDetail = async () => {
       StudyThumbnails: thumbnails,
       participants: s.participants || [],
     }
+
     // userId로 작성자 판별
-    isAuthor.value = studyUserId && myUserId && studyUserId === myUserId
+    isAuthor.value = s.User?.userId === myUserId
     isParticipant.value = res.data.data.isParticipant || false
 
     if (study.value.category_id) {
@@ -436,6 +453,7 @@ const handleJoinStudy = async () => {
     )
     // 참가신청 성공 후 최신 데이터로 갱신
     await fetchStudyDetail()
+    window.dispatchEvent(new Event('refreshSidebar'))
     alert('스터디 참가 신청이 완료되었습니다.')
   } catch (error) {
     errorMessage.value = error.response?.data?.message || '스터디 참가 실패'
@@ -499,6 +517,7 @@ const startEditing = async () => {
 // 수정 취소
 const cancelEditing = () => {
   isEditing.value = false
+  kickedUserIds.value = []
   editedStudy.value = {
     title: study.value.title,
     category_id: study.value.category_id,
@@ -553,6 +572,18 @@ const handleUpdateStudy = async () => {
     }
     // 썸네일도 반영
     study.value.StudyThumbnails = [{ path: editedStudy.value.thumbnail }]
+    // kickedUserIds에 있는 유저 추방
+    for (const userId of kickedUserIds.value) {
+      try {
+        const token = localStorage.getItem('token')
+        await axios.delete(`http://localhost:3000/study/${study.value.id}/participant/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      } catch {
+        // 개별 에러는 무시하고 계속 진행
+      }
+    }
+    kickedUserIds.value = []
     isEditing.value = false
     thumbnailDeleted.value = false;
     alert('스터디 정보가 수정되었습니다.')
@@ -599,6 +630,13 @@ onMounted(() => {
   link.as = 'image'
   link.href = logoImage
   document.head.appendChild(link)
+
+  nextTick(() => {
+    const img = document.querySelector('.study-thumbnail')
+    if (img && img.complete) {
+      isImageLoading.value = false
+    }
+  })
 })
 
 onMounted(() => {
@@ -627,14 +665,6 @@ const triggerFileInput = () => {
 const deleteThumbnail = () => {
   thumbnailDeleted.value = true;
   editedStudy.value.thumbnail = '';
-}
-
-const kickParticipant = (participant) => {
-  if (confirm(`${participant.name}님을 추방하시겠습니까?`)) {
-    // TODO: 실제 추방 API 연동
-    study.value.participants = study.value.participants.filter(p => p.id !== participant.id)
-    alert(`${participant.name}님이 추방되었습니다.`)
-  }
 }
 
 const fetchSidoList = async () => {
@@ -689,6 +719,7 @@ const handleCancelApplication = async () => {
       }
     )
     await fetchStudyDetail()
+    window.dispatchEvent(new Event('refreshSidebar'))
     alert('참여 신청이 취소되었습니다.')
   } catch (error) {
     errorMessage.value = error.response?.data?.message || '참여 신청 취소 실패'
@@ -710,29 +741,39 @@ const fetchApplicants = async () => {
 const handleApprove = async (applicationId) => {
   try {
     const token = localStorage.getItem('token')
-    await axios.patch(`http://localhost:3000/study-application/${applicationId}/status`, { status: 'accepted' }, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    await axios.patch(`http://localhost:3000/study-application/${applicationId}/status`, 
+      { status: 'accepted' }, 
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    )
     await fetchApplicants()
     await fetchStudyDetail()
-  } catch {}
+    alert('참여 신청이 승인되었습니다.')
+  } catch (error) {
+    console.error('승인 실패:', error, error.response);
+    errorMessage.value = error.response?.data?.message || '승인 실패';
+    alert(errorMessage.value);
+  }
 }
 
 const handleReject = async (applicationId) => {
   try {
     const token = localStorage.getItem('token')
-    await axios.patch(`http://localhost:3000/study-application/${applicationId}/status`, { status: 'rejected' }, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    await axios.patch(`http://localhost:3000/study-application/${applicationId}/status`, 
+      { status: 'rejected' }, 
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    )
     await fetchApplicants()
     await fetchStudyDetail()
-  } catch {}
-}
-
-const statusKor = (status) => {
-  if (status === 'accepted') return '승인'
-  if (status === 'rejected') return '거절'
-  return '대기'
+    alert('참여 신청이 거절되었습니다.')
+  } catch (error) {
+    console.error('거절 실패:', error)
+    errorMessage.value = error.response?.data?.message || '거절 실패'
+    alert('참여 신청 거절에 실패했습니다.')
+  }
 }
 
 watch(participantsTab, async (tab) => {
@@ -740,6 +781,13 @@ watch(participantsTab, async (tab) => {
     await fetchApplicants()
   }
 })
+
+// handleKickParticipant 함수 수정: 서버에 요청하지 않고 kickedUserIds에만 추가
+const handleKickParticipant = (userId) => {
+  if (!kickedUserIds.value.includes(userId)) {
+    kickedUserIds.value.push(userId)
+  }
+}
 </script>
 
 <style scoped>
@@ -1950,3 +1998,32 @@ watch(participantsTab, async (tab) => {
   border-bottom: 2.5px solid #6f4e37;
 }
 </style> 
+
+{"study":{
+  "id":7,
+  "title":"ㅁ2",
+  "description":"ㅁ2",
+  "start_date":"2025-05-25T00:00:00.000Z",
+  "end_date":"2025-05-26T00:00:00.000Z",
+  "max_participants":2,
+  "current_participants":3,
+  "createdAt":"2025-05-25T06:32:54.721Z",
+  "updatedAt":"2025-05-26T00:21:04.606Z",
+  "deletedAt":null,
+  "Category":{
+    "id":1,
+    "name":"IT",
+    "createdAt":"2025-05-19T01:40:16.296Z",
+    "updatedAt":"2025-05-19T01:40:16.296Z",
+    "deletedAt":null
+  },
+  "City":{
+    "id":1,
+    "name":
+    "부산광역시",
+    "createdAt":
+    "2025-05-19T01:40:19.359Z",
+    "updatedAt":"2025-05-19T01:40:19.359Z",
+    "deletedAt":null
+  },
+  "District":{"id":1,"name":"중구"},"Town":{"id":1,"name":"중앙동6가"},"User":{"userId":"test1234","nickname":"hyo"},"StudyThumbnails":[],"participants":[{"userId":"test1234","nickname":"hyo","isAuthor":true}]}}
