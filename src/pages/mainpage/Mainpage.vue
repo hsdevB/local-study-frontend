@@ -92,7 +92,7 @@ const router = useRouter()
 const route = useRoute()
 const categories = ref([])
 const isLoggedIn = ref(true)
-const username = ref('홍길동')
+// const username = ref('홍길동')
 const searchQuery = ref('')
 
 // 지역 선택 관련 상태
@@ -301,16 +301,16 @@ watch(() => route.query.category, (newCategoryId) => {
   }
 }, { immediate: true })
 
-// 로그인 상태 확인
-const checkLoginStatus = () => {
-  // TODO: 실제 로그인 상태 확인 로직 구현
-  // 임시로 로그인 상태 체크
-  const token = localStorage.getItem('token')
-  if (token) {
-    isLoggedIn.value = true
-    username.value = '사용자' // TODO: 실제 사용자 이름으로 대체
-  }
-}
+// // 로그인 상태 확인
+// const checkLoginStatus = () => {
+//   // TODO: 실제 로그인 상태 확인 로직 구현
+//   // 임시로 로그인 상태 체크
+//   const token = localStorage.getItem('token')
+//   if (token) {
+//     isLoggedIn.value = true
+//     username.value = '사용자' // TODO: 실제 사용자 이름으로 대체
+//   }
+// }
 
 // 지역 선택 핸들러
 const handleSidoChange = async () => {
@@ -426,7 +426,7 @@ const createdStudies = ref([])
 
 // 초기 데이터 로드
 onMounted(async () => {
-  await checkLoginStatus()
+  // await checkLoginStatus()
   await fetchCategories()
   await fetchStudies()
   await fetchSidoList()

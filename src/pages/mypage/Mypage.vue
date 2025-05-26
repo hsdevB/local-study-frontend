@@ -301,8 +301,6 @@ const fetchCreatedStudies = async () => {
       }
     });
 
-    console.log('API Response:', response.data);
-
     if (response.data && response.data.studies) {
       createdStudies.value = response.data.studies.map(study => ({
         id: study.id,

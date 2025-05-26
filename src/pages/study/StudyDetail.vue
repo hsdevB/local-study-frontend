@@ -277,7 +277,7 @@ const route = useRoute()
 const study = ref({})
 const categories = ref([])
 const isLoggedIn = ref(true)
-const username = ref('')
+// const username = ref('')
 const selectedCategory = ref(null)
 const isParticipant = ref(false)
 const isAuthor = ref(false)
@@ -424,14 +424,14 @@ const fetchCategories = async () => {
 }
 
 // 로그인 상태 확인
-const checkLoginStatus = () => {
-  // TODO: 실제 로그인 상태 확인 로직 구현
-  const token = localStorage.getItem('token')
-  if (token) {
-    isLoggedIn.value = true
-    username.value = '사용자'
-  }
-}
+// const checkLoginStatus = () => {
+//   // TODO: 실제 로그인 상태 확인 로직 구현
+//   const token = localStorage.getItem('token')
+//   if (token) {
+//     isLoggedIn.value = true
+//     username.value = '사용자'
+//   }
+// }
 
 // 스터디 참가 처리
 const handleJoinStudy = async () => {
@@ -657,7 +657,7 @@ onMounted(() => {
 onMounted(() => {
   fetchSidoList()
   fetchCategories()
-  checkLoginStatus()
+  // checkLoginStatus()
   fetchStudyDetail()
 })
 
@@ -1044,7 +1044,7 @@ const handleKickParticipant = async (userId) => {
 
 .thumbnail-container {
   width: 100%;
-  height: 300px;
+  height: 250px;
   position: relative;
   border-radius: 8px;
   overflow: hidden;
@@ -1133,7 +1133,7 @@ const handleKickParticipant = async (userId) => {
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 130px;
+  max-height: 100px;
   overflow-y: auto;
 }
 
@@ -1884,10 +1884,8 @@ const handleKickParticipant = async (userId) => {
   list-style: none;
   padding: 0;
   margin: 1.5rem 0 1rem 0;
-}
-
-.applicant-list:hover {
-  background-color: #f5f2ef;
+  max-height: 100px;
+  overflow-y: auto;
 }
 
 .applicant-item {
@@ -1897,10 +1895,11 @@ const handleKickParticipant = async (userId) => {
   gap: 1rem;
   margin-bottom: 1rem;
   position: relative;
+  transition: background 0.2s;
 }
 
-.applicant-item:hover .btn-group {
-  display: flex;
+.applicant-item:hover {
+  background: #f5f2ef;
 }
 
 .applicant-nickname {
@@ -1933,33 +1932,34 @@ const handleKickParticipant = async (userId) => {
 }
 
 .approve-btn, .reject-btn {
-  padding: 0.1rem 0.3rem;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border: none;
+  padding: 0.1rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  border: 1px solid #e3d8ce;
   cursor: pointer;
-  transition: background 0.2s;
-  height: 28px;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  height: 23px;
   min-width: 48px;
-}
-
-.approve-btn {
-  background-color: #2e7d32;
-  color: #fff;
+  background: #eee5dd;
+  color: #2e7d32;
 }
 
 .approve-btn:hover {
-  background-color: #388e3c;
+  background: #e3d8ce;
+  color: #2e7d32;
 }
 
 .reject-btn {
-  background-color: #c62828;
-  color: #fff;
+  background: #f5f2ef;
+  color: #c62828;
 }
 
 .reject-btn:hover {
-  background-color: #ad1720;
+  background: #eee5dd;
+  color: #c62828;
 }
 
 .close-btn {

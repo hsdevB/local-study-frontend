@@ -57,28 +57,26 @@ const goToMain = () => {
 
 const findPassword = async () => {
   try {
-    // TODO: 실제 API 호출로 대체
-    // 임시로 이메일 검증 로직 구현
-    const mockUserData = {
-      'testuser': 'test@example.com'
+    errorMessage.value = '';
+    const res = await fetch('http://localhost:3000/password-reset/request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        userId: userId.value,
+        email: email.value
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      errorMessage.value = data.message || '비밀번호 찾기에 실패했습니다. 다시 시도해주세요.';
+      return;
     }
-
-    if (!mockUserData[userId.value]) {
-      errorMessage.value = '등록되지 않은 아이디입니다.'
-      return
-    }
-
-    if (mockUserData[userId.value] !== email.value) {
-      errorMessage.value = '입력하신 이메일이 가입 시 등록한 이메일과 일치하지 않습니다.'
-      return
-    }
-
-    // 검증 성공 시
-    errorMessage.value = ''
-    alert('입력하신 이메일로 비밀번호 재설정 링크를 발송했습니다.')
-    router.push('/login')
+    alert(data.data.message || '입력하신 이메일로 임시 비밀번호가 발송되었습니다.');
+    router.push('/login');
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || '비밀번호 찾기에 실패했습니다. 다시 시도해주세요.'
+    errorMessage.value = error.message || '비밀번호 찾기에 실패했습니다. 다시 시도해주세요.';
   }
 }
 </script>
