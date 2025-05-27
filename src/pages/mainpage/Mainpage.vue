@@ -50,7 +50,7 @@
           </div>
           <div class="study-info">
             <h3 class="study-title">{{ study.title }}</h3>
-            <p class="study-content">{{ study.content }}</p>
+            <p class="study-location">{{ study.city }} > {{ study.district }} > {{ study.town }}</p>
             <div class="study-meta">
               <span class="study-author">{{ study.author }}</span>
               <div class="study-status-group">
@@ -323,13 +323,13 @@ const filteredStudies = computed(() => {
   // 지역 필터링
   if (selectedSido.value) {
     filtered = filtered.filter(study => {
-      const matchesSido = study.City?.id === Number(selectedSido.value)
+      const matchesSido = study.city === selectedSido.value
       
       if (selectedSigungu.value) {
-        const matchesSigungu = Number(study.District?.id) === Number(selectedSigungu.value)
+        const matchesSigungu = study.district === selectedSigungu.value
         
         if (selectedDong.value) {
-          return matchesSido && matchesSigungu && Number(study.Town?.id) === Number(selectedDong.value)
+          return matchesSido && matchesSigungu && study.town === selectedDong.value
         }
         
         return matchesSido && matchesSigungu
@@ -427,9 +427,10 @@ const fetchStudies = async () => {
           maxMembers: study.max_participants,
           Category: study.Category,
           author: study.User?.nickname,
-          City: study.City,
-          District: study.District,
-          Town: study.Town,
+          city: study.City?.name || '',
+          district: study.District?.name || '',
+          town: study.Town?.name || '',
+          StudyThumbnails: study.StudyThumbnails,
           isImageLoading: true
         }
       })
@@ -703,6 +704,20 @@ h3 {
   font-size: 1rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.study-location {
+  color: #666;
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+  min-height: 1.2em;
   line-height: 1.4;
 }
 

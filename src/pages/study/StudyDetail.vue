@@ -1798,6 +1798,10 @@ const getStudyStatus = (study) => {
   height: 320px;
   overflow-y: auto;
   flex-shrink: 0;
+  word-break: break-all;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .content-location,

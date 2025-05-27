@@ -131,7 +131,7 @@
               </div>
               <div class="study-info">
                 <h3 class="study-title">{{ study.title }}</h3>
-                <p class="study-content">{{ study.content }}</p>
+                <p class="study-location">{{ study.city }} > {{ study.district }} > {{ study.town }}</p>
                 <div class="study-meta">
                   <span class="study-author">{{ study.author }}</span>
                   <div class="study-status-group">
@@ -200,7 +200,7 @@
               </div>
               <div class="study-info">
                 <h3 class="study-title">{{ study.title }}</h3>
-                <p class="study-content">{{ study.content }}</p>
+                <p class="study-location">{{ study.city }} > {{ study.district }} > {{ study.town }}</p>
                 <div class="study-meta">
                   <span class="study-author">{{ study.author }}</span>
                   <div class="study-status-group">
@@ -912,6 +912,20 @@ const changePassword = async () => {
   font-size: 1rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.study-location {
+  color: #666;
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+  min-height: 1.2em;
   line-height: 1.4;
 }
 
