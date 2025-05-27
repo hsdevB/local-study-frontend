@@ -318,11 +318,12 @@ errorMessage.value = ''
 const formatDate = (dateString) => {
   if (!dateString) return ''
   const date = new Date(dateString)
+  const weekdays = ['일', '월', '화', '수', '목', '금', '토']
   return date.toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  })
+  }) + `(${weekdays[date.getDay()]})`
 }
 
 // 지역 데이터 매핑
@@ -1181,7 +1182,7 @@ const getStudyStatus = (study) => {
 .participants-section {
   background-color: #fbf9f8;
   border-radius: 8px;
-  padding: 1.5rem;
+  padding: 1.3rem;
   border: 1px solid #eee5dd;
   position: static;
   margin-bottom: 0.25rem;
@@ -1195,12 +1196,14 @@ const getStudyStatus = (study) => {
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #eee5dd;
+  height: 32px;
 }
 
 .participants-section .participants-header h3 {
   color: #6f4e37;
   font-size: 1.2rem;
   margin: 0;
+  line-height: 1;
 }
 
 .participants-section .participants-count {
@@ -1217,7 +1220,7 @@ const getStudyStatus = (study) => {
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 100px;
+  height: 135px;
   overflow-y: auto;
 }
 
@@ -2029,8 +2032,8 @@ const getStudyStatus = (study) => {
 .applicant-list {
   list-style: none;
   padding: 0;
-  margin: 1.5rem 0 1rem 0;
-  max-height: 100px;
+  margin: 0;
+  height: 135px;
   overflow-y: auto;
 }
 
@@ -2149,7 +2152,7 @@ const getStudyStatus = (study) => {
 
 .participants-tabs-nav {
   margin-bottom: 0;
-  margin-top: 3rem;
+  margin-top: 2rem;
 }
 .participants-tabs-nav ul {
   display: flex;
@@ -2157,6 +2160,8 @@ const getStudyStatus = (study) => {
   padding: 0;
   margin: 0;
   list-style: none;
+  padding-bottom: 0.75rem;
+  padding-left: 0.5rem;
 }
 .participants-tabs-nav li {
   cursor: pointer;
@@ -2165,9 +2170,12 @@ const getStudyStatus = (study) => {
   color: #8b6b4a;
   border-bottom: 2.5px solid transparent;
   transition: color 0.2s, border-bottom 0.2s;
+  line-height: 1;
+  position: relative;
 }
 .participants-tabs-nav li.active {
   color: #6f4e37;
   border-bottom: 2.5px solid #6f4e37;
+  padding-bottom: 0.3rem;
 }
 </style> 
