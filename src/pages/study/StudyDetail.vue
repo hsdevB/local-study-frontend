@@ -108,6 +108,11 @@
               >
             </div>
             <div class="category-members-group">
+              <div class="content-status">
+                <span :class="['study-status', getStudyStatus(study)]">
+                  {{ getStudyStatus(study) === 'completed' ? '모집완료' : '모집중' }}
+                </span>
+              </div>
               <div class="content-category">
                 <template v-if="!isEditing">
                   {{ selectedCategory?.name }}
@@ -875,6 +880,13 @@ const navigateToCategory = () => {
     })
   }
 }
+
+const getStudyStatus = (study) => {
+  if (study.currentMembers >= study.maxMembers) {
+    return 'completed'
+  }
+  return 'recruiting'
+}
 </script>
 
 <style scoped>
@@ -1505,13 +1517,43 @@ const navigateToCategory = () => {
 
 .category-members-group {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 0.7rem;
-  min-width: 0;
-  flex: 1 1 0;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.content-status {
+  display: flex;
+  align-items: center;
+  min-width: 90px;
   justify-content: flex-end;
-  margin-left: auto;
+}
+
+.study-status {
+  font-size: 0.87rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: center;
+  height: 36px;
+  box-sizing: border-box;
+  background-color: #eee5dd;
+  position: relative;
+  z-index: 1;
+  width: 90px;
+}
+
+.study-status.recruiting {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.study-status.completed {
+  background-color: #f5f5f5;
+  color: #757575;
+  border: 1px solid #e0e0e0;
 }
 
 .content-category {
@@ -1524,9 +1566,12 @@ const navigateToCategory = () => {
   font-weight: 600;
   white-space: nowrap;
   text-align: center;
-  min-width: 120px;
+  min-width: 110px;
   height: 36px;
   box-sizing: border-box;
+  border: 1px solid #e3d8ce;
+  position: relative;
+  z-index: 2;
 }
 
 .content-members {

@@ -53,7 +53,12 @@
             <p class="study-content">{{ study.content }}</p>
             <div class="study-meta">
               <span class="study-author">{{ study.author }}</span>
-              <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
+              <div class="study-status-group">
+                <span :class="['study-status', getStudyStatus(study)]">
+                  {{ getStudyStatus(study) === 'completed' ? '모집완료' : '모집중' }}
+                </span>
+                <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
+              </div>
             </div>
           </div>
         </div>
@@ -270,6 +275,14 @@ const goToCreateStudy = () => {
     }))
   }
   router.push('/create-study')
+}
+
+// 스터디 상태 계산
+const getStudyStatus = (study) => {
+  if (study.currentMembers >= study.maxMembers) {
+    return 'completed'
+  }
+  return 'recruiting'
 }
 
 // 필터링된 스터디 목록
@@ -721,6 +734,32 @@ h3 {
   border-top: 1px solid #eee5dd;
 }
 
+.study-author {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+
+.study-status-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.study-status {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.study-members {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
 .pagination,
 .page-btn,
 .page-info {
@@ -883,5 +922,15 @@ h3 {
 .stat-item:hover {
   transform: translateY(-2px);
   background-color: rgba(111, 78, 55, 0.05);
+}
+
+.study-status.recruiting {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.study-status.completed {
+  background-color: #f5f5f5;
+  color: #757575;
 }
 </style>

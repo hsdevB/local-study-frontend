@@ -134,7 +134,12 @@
                 <p class="study-content">{{ study.content }}</p>
                 <div class="study-meta">
                   <span class="study-author">{{ study.author }}</span>
-                  <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
+                  <div class="study-status-group">
+                    <span :class="['study-status', getStudyStatus(study)]">
+                      {{ getStudyStatus(study) === 'completed' ? '모집완료' : '모집중' }}
+                    </span>
+                    <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -177,7 +182,7 @@
             </div>
           </div>
           <div class="study-list">
-            <div v-for="study in filteredAppliedStudies" :key="study.id" class="study-card" @click="goToStudyDetail(study.id)">
+            <div class="study-card" v-for="study in filteredAppliedStudies" :key="study.id" @click="goToStudyDetail(study.id)">
               <div class="study-thumbnail">
                 <div v-show="study.isImageLoading" class="study-thumbnail-skeleton">
                   <div class="skeleton-content"></div>
@@ -198,7 +203,12 @@
                 <p class="study-content">{{ study.content }}</p>
                 <div class="study-meta">
                   <span class="study-author">{{ study.author }}</span>
-                  <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
+                  <div class="study-status-group">
+                    <span :class="['study-status', getStudyStatus(study)]">
+                      {{ getStudyStatus(study) === 'completed' ? '모집완료' : '모집중' }}
+                    </span>
+                    <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -280,20 +290,25 @@ const appliedStudies = ref([])
 const studyTab = ref('all')
 const appliedTab = ref('all')
 
-// 내가 만든 스터디 필터링
+// 스터디 상태 계산
+const getStudyStatus = (study) => {
+  if (study.currentMembers >= study.maxMembers) {
+    return 'completed'
+  }
+  return 'recruiting'
+}
+
+// 필터링된 스터디 목록
 const filteredCreatedStudies = computed(() => {
-  if (studyTab.value === 'all') return createdStudies.value
-  
-  return createdStudies.value.filter(study => {
-    const isCompleted = 
-      study.currentMembers >= study.maxMembers || // 현재 인원이 최대 인원과 같거나 많을 때
-      new Date(study.endDate) < new Date(); // 마감일이 지났을 때
-    
-    if (studyTab.value === 'recruiting') return !isCompleted;
-    if (studyTab.value === 'completed') return isCompleted;
-    return true;
-  });
-});
+  let filtered = createdStudies.value
+
+  // 상태 필터링
+  if (studyTab.value !== 'all') {
+    filtered = filtered.filter(study => getStudyStatus(study) === studyTab.value)
+  }
+
+  return filtered
+})
 
 // 신청한 스터디 필터링
 const filteredAppliedStudies = computed(() => {
@@ -839,7 +854,15 @@ const changePassword = async () => {
   height: 160px;
   position: relative;
   overflow: hidden;
+  border-radius: 8px 8px 0 0;
   flex-shrink: 0;
+}
+
+.study-thumbnail img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  z-index: 2;
 }
 
 .study-thumbnail-skeleton {
@@ -875,13 +898,6 @@ const changePassword = async () => {
   }
 }
 
-.study-thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 2;
-}
-
 .study-info {
   padding: 0.75rem;
   display: flex;
@@ -902,7 +918,7 @@ const changePassword = async () => {
 .study-content {
   color: #666;
   font-size: 0.85rem;
-  margin: 0 0 2.5rem 0;
+  margin: 0 0 0.5rem 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -927,37 +943,45 @@ const changePassword = async () => {
   border-top: 1px solid #eee5dd;
 }
 
+.study-author {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+
+.study-status-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* margin-left: auto; */
+}
+
 .study-status {
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 500;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  text-align: center;
+  min-width: 50px;
 }
 
-.study-status.모집중 {
-  background-color: #e3f2fd;
-  color: #1976d2;
-}
-
-.study-status.모집완료 {
+.study-status.recruiting {
   background-color: #e8f5e9;
   color: #2e7d32;
 }
 
-.study-status.대기 {
-  background-color: #fff3e0;
-  color: #f57c00;
+.study-status.completed {
+  background-color: #f5f5f5;
+  color: #757575;
 }
 
-.study-status.승인 {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.study-status.거절 {
-  background-color: #ffebee;
-  color: #c62828;
+.study-members {
+  color: #6f4e37;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 .date-picker-wrapper {
