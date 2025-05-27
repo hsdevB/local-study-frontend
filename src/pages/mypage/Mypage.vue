@@ -636,200 +636,6 @@ const changePassword = async () => {
   margin-top: 0; /* 헤더와의 간격 제거 */
 }
 
-.sidebar {
-  width: 250px;
-  background-color: #fbf9f8;
-  padding: 2rem 1rem;
-  border-right: 1px solid #eee5dd;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: calc(100vh - 60px);
-}
-
-.sidebar-title {
-  color: #6f4e37;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #eee5dd;
-  text-align: center;
-}
-
-.category-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  text-align: center;
-}
-
-.category-item {
-  margin-bottom: 0.5rem;
-}
-
-.category-item a {
-  display: block;
-  padding: 0.5rem;
-  color: #4b3621;
-  text-decoration: none;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.category-item a:hover {
-  background-color: #eee5dd;
-  color: #6f4e37;
-}
-
-.category-item.selected a {
-  background-color: #eee5dd;
-  color: #6f4e37;
-  font-weight: 600;
-}
-
-.user-menu {
-  margin-bottom: 2rem;
-}
-
-.user-profile {
-  text-align: center;
-  padding: 1.5rem;
-  background-color: #f5f2ef;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  margin-top: auto;
-}
-
-.profile-badge {
-  margin-bottom: 1.5rem;
-}
-
-.username-link {
-  text-decoration: none;
-  color: inherit;
-  display: block;
-  transition: transform 0.2s ease;
-  padding: 0.5rem;
-  border-radius: 8px;
-}
-
-.username-link:hover {
-  transform: translateY(-2px);
-  background-color: rgba(111, 78, 55, 0.05);
-}
-
-.username {
-  color: #4b3621;
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem 0;
-}
-
-/* .user-role {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  background-color: #6f4e37;
-  color: white;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-} */
-
-.user-stats {
-  display: flex;
-  justify-content: space-around;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(111, 78, 55, 0.1);
-  margin-bottom: 1.5rem;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.2s ease;
-  padding: 0.5rem;
-  border-radius: 8px;
-}
-
-.stat-item:hover {
-  transform: translateY(-2px);
-  background-color: rgba(111, 78, 55, 0.05);
-}
-
-.stat-value {
-  color: #6f4e37;
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.stat-label {
-  color: #8b6b4a;
-  font-size: 0.9rem;
-}
-
-.user-actions {
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(111, 78, 55, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.user-actions.no-border {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-}
-
-.user-actions .menu-item {
-  width: 100%;
-  text-align: center;
-  padding: 0.75rem;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  background-color: #eee5dd;
-  color: #6f4e37;
-  text-decoration: none;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.user-actions .menu-item:hover {
-  transform: translateY(-2px);
-  background-color: #e3d8ce;
-}
-
-.user-actions .menu-item.logout {
-  background-color: #6f4e37;
-  color: white;
-}
-
-.user-actions .menu-item.logout:hover {
-  background-color: #8b6b4a;
-}
-
-.user-actions .menu-item.signup {
-  background-color: #6f4e37;
-  color: white;
-}
-
-.user-actions .menu-item.signup:hover {
-  background-color: #8b6b4a;
-}
-
-.user-actions .menu-item i {
-  font-size: 0.9rem;
-}
-
 .main-content {
   flex: 1;
   padding: 2rem;
@@ -839,7 +645,6 @@ const changePassword = async () => {
 .content-section {
   width: 100%;
   margin: 0 auto;
-  /* padding: 0 1rem; */
 }
 
 .content-header {
@@ -970,13 +775,6 @@ const changePassword = async () => {
     flex-direction: column;
   }
 
-  .sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid #eee5dd;
-    padding: 1rem;
-  }
-
   .main-content {
     padding: 1rem;
   }
@@ -993,17 +791,6 @@ const changePassword = async () => {
 
   .tab-btn {
     white-space: nowrap;
-  }
-
-  .user-stats {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .stat-item {
-    padding: 0.5rem;
-    background-color: rgba(255, 255, 255, 0.5);
-    border-radius: 8px;
   }
 }
 
@@ -1183,6 +970,7 @@ const changePassword = async () => {
   margin: 0;
   padding: 0;
 }
+
 .date-display {
   position: relative;
   width: 100%;
@@ -1204,6 +992,7 @@ const changePassword = async () => {
   align-items: center;
   pointer-events: none;
 }
+
 .date-display.placeholder {
   color: #bdbdbd;
 }
@@ -1212,6 +1001,7 @@ const changePassword = async () => {
   display: block;
   margin-bottom: 0.3rem;
 }
+
 .date-picker-wrapper {
   display: block;
   margin-top: 0.1rem;
@@ -1228,6 +1018,7 @@ const changePassword = async () => {
   margin-left: 0.5rem;
   transition: background 0.2s, color 0.2s;
 }
+
 .btn-verify:hover {
   background-color: #8b6b4a;
   color: white;
@@ -1245,6 +1036,7 @@ const changePassword = async () => {
   justify-content: center;
   z-index: 2000;
 }
+
 .password-modal-content {
   background: #fff;
   border-radius: 12px;

@@ -5,10 +5,16 @@
       <h5 class="sidebar-title">카테고리</h5>
       <ul class="category-list">
         <li 
+          class="category-item"
+          :class="{ 'selected': !localSelectedCategory || localSelectedCategory.id === 'all' }"
+        >
+          <a href="#" @click.prevent="selectCategory(null)">전체</a>
+        </li>
+        <li 
           v-for="category in categories" 
           :key="category.id" 
           class="category-item"
-          :class="{ 'selected': !isMypage && selectedCategory?.id === category.id && route.query.tab !== 'applied' && route.query.tab !== 'created' }"
+          :class="{ 'selected': localSelectedCategory && localSelectedCategory.id === category.id }"
         >
           <a href="#" @click.prevent="selectCategory(category)">{{ category.name }}</a>
         </li>
@@ -32,7 +38,7 @@
           </router-link>
         </div>
         <div class="user-actions">
-          <a href="#" @click.prevent="openMypageModal" class="menu-item">마이페이지 (내정보)</a>
+          <a href="#" @click.prevent="openMypageModal" class="menu-item">프로필 수정</a>
           <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
         </div>
       </template>
@@ -69,7 +75,6 @@ const props = defineProps({
     default: null
   }
 })
-
 const emit = defineEmits(['update:selectedCategory'])
 
 const router = useRouter()
@@ -77,6 +82,7 @@ const route = useRoute()
 
 // 상태 관리
 const categories = ref([])
+const localSelectedCategory = ref(null)  // UI 스타일링을 위한 로컬 상태
 const userProfile = ref(null)
 const isLoggedIn = ref(false)
 const username = ref('')
@@ -174,15 +180,35 @@ watch(() => localStorage.getItem('token'), (newToken) => {
 
 // 카테고리 선택 처리
 const selectCategory = (category) => {
-  emit('update:selectedCategory', category)
-  router.push({
-    path: '/',
-    query: { 
-      category: category.id,
-      categoryName: category.name
-    }
-  })
+  if (category === null) {
+    // '전체' 카테고리 선택 시
+    localSelectedCategory.value = { id: 'all', name: '전체' }
+    emit('update:selectedCategory', { id: 'all', name: '전체' })
+    router.push({
+      path: '/',
+      query: { 
+        category: 'all',
+        categoryName: '전체'
+      }
+    })
+  } else {
+    // 기존 카테고리 선택 로직
+    localSelectedCategory.value = category
+    emit('update:selectedCategory', category)
+    router.push({
+      path: '/',
+      query: { 
+        category: category.id,
+        categoryName: category.name
+      }
+    })
+  }
 }
+
+// props가 변경될 때 로컬 상태도 업데이트
+watch(() => props.selectedCategory, (newCategory) => {
+  localSelectedCategory.value = newCategory
+}, { immediate: true })
 
 // 로그아웃 함수
 const logout = async () => {
@@ -304,7 +330,7 @@ onUnmounted(() => {
 
 .category-item a {
   display: block;
-  padding: 0.75rem;
+  padding: 0.5rem;
   color: #4b3621;
   text-decoration: none;
   border-radius: 6px;
@@ -313,8 +339,8 @@ onUnmounted(() => {
 }
 
 .category-item a:hover {
-  background-color: #eee5dd;
-  color: #6f4e37;
+  background-color: #eee5dd !important;
+  color: #6f4e37 !important;
 }
 
 .category-item.selected a {
@@ -329,7 +355,7 @@ onUnmounted(() => {
 
 .user-profile {
   text-align: center;
-  padding: 1.5rem;
+  padding: 1.25rem;
   background-color: #f5f2ef;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -356,7 +382,7 @@ onUnmounted(() => {
 
 .username {
   color: #4b3621;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
 }
@@ -364,9 +390,9 @@ onUnmounted(() => {
 .user-stats {
   display: flex;
   justify-content: space-around;
-  padding-top: 1rem;
+  padding-top: 0.75rem;
   border-top: 1px solid rgba(111, 78, 55, 0.1);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .stat-item {
@@ -387,7 +413,7 @@ onUnmounted(() => {
 
 .stat-value {
   color: #6f4e37;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 600;
   margin-bottom: 0.25rem;
 }
@@ -398,7 +424,7 @@ onUnmounted(() => {
 }
 
 .user-actions {
-  padding-top: 1.5rem;
+  padding-top: 1.25rem;
   border-top: 1px solid rgba(111, 78, 55, 0.1);
   display: flex;
   flex-direction: column;
@@ -412,9 +438,7 @@ onUnmounted(() => {
 }
 
 .user-actions .menu-item {
-  width: 100%;
-  text-align: center;
-  padding: 0.75rem;
+  padding: 0.6rem;
   border-radius: 8px;
   transition: all 0.2s ease;
   background-color: #eee5dd;

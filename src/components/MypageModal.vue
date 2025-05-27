@@ -74,6 +74,7 @@
           </div>
           <div class="form-actions">
             <template v-if="!isEditing">
+              <button class="close-btn" @click="closeModal">닫기</button>
               <button class="edit-btn" @click="startEditing">수정하기</button>
             </template>
             <template v-else>
@@ -346,6 +347,11 @@ watch([() => editedProfile.value.password, () => editedProfile.value.passwordCon
   passwordMatchMessage.value = isPasswordMatch.value ? '비밀번호가 일치합니다' : '비밀번호가 일치하지 않습니다'
 }, { immediate: true })
 
+// 닫기 함수 추가
+const closeModal = () => {
+  emit('close')
+}
+
 onMounted(() => {
   fetchUserProfile()
 })
@@ -354,6 +360,7 @@ onMounted(() => {
 <style scoped>
 .mypage-modal {
   width: 100%;
+  background-color: #fbf9f8;
 }
 
 .mypage-content {
@@ -361,7 +368,7 @@ onMounted(() => {
 }
 
 .profile-section {
-  background: white;
+  background: #fbf9f8;
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -493,6 +500,21 @@ onMounted(() => {
   margin-top: 2rem;
 }
 
+.close-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background-color: #f5f2ef;
+  color: #6f4e37;
+  border: 1px solid #e3d8ce;
+}
+
+.close-btn:hover {
+  background-color: #eee5dd;
+}
+
 .edit-btn,
 .cancel-btn,
 .save-btn {
@@ -504,13 +526,14 @@ onMounted(() => {
 }
 
 .edit-btn {
-  background-color: #eee5dd;
-  color: #6f4e37;
+  background-color: #6f4e37;
+  color: #eee5dd;
   border: 1px solid #e3d8ce;
 }
 
 .edit-btn:hover {
-  background-color: #e3d8ce;
+  background-color: #8b6b4a;
+  color: white;
 }
 
 .cancel-btn {

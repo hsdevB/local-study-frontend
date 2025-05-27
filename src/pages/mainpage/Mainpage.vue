@@ -176,6 +176,21 @@ const resetAllFilters = () => {
   currentPage.value = 1
 }
 
+// 라우트 변경 감지
+watch(() => route.query.category, (newCategoryId) => {
+  if (newCategoryId === 'all') {
+    emit('update:selectedCategory', {
+      id: 'all',
+      name: '전체'
+    })
+  } else if (newCategoryId) {
+    const category = categories.value.find(cat => cat.id === Number(newCategoryId))
+    if (category) {
+      emit('update:selectedCategory', category)
+    }
+  }
+}, { immediate: true })
+
 // URL 쿼리 파라미터 처리
 const processSearchQuery = () => {
   const query = route.query.search
@@ -186,33 +201,37 @@ const processSearchQuery = () => {
     handleSearch(query)
   }
 
-  if (categoryId) {
-    const category = categories.value.find(cat => cat.id === parseInt(categoryId))
+  if (categoryId === 'all') {
+    emit('update:selectedCategory', {
+      id: 'all',
+      name: '전체'
+    })
+  } else if (categoryId) {
+    const category = categories.value.find(cat => cat.id === Number(categoryId))
     if (category) {
       emit('update:selectedCategory', category)
     } else {
-      // 카테고리를 찾지 못한 경우, 새로 생성
       emit('update:selectedCategory', {
-        id: parseInt(categoryId),
+        id: Number(categoryId),
         name: categoryName || '카테고리'
       })
     }
-  } else if (categories.value.length > 0) {
-    // URL에 카테고리 정보가 없는 경우 기본 카테고리 선택
-    emit('update:selectedCategory', categories.value[0])
+  } else {
+    // URL에 카테고리 정보가 없는 경우 기본값으로 '전체' 카테고리 선택
+    emit('update:selectedCategory', {
+      id: 'all',
+      name: '전체'
+    })
+    // URL도 업데이트
+    router.push({
+      path: '/',
+      query: { 
+        category: 'all',
+        categoryName: '전체'
+      }
+    })
   }
 }
-
-// 라우트 변경 감지
-watch(() => route.query.search, (newQuery) => {
-  if (newQuery) {
-    handleSearch(newQuery)
-  } else {
-    // 검색어가 제거된 경우 검색 초기화
-    searchQuery.value = ''
-    currentPage.value = 1
-  }
-})
 
 // 리셋 이벤트 처리
 const handleReset = () => {
@@ -241,9 +260,9 @@ const filteredStudies = computed(() => {
   let filtered = studies.value
   
   // 카테고리 필터링
-  if (props.selectedCategory) {
+  if (props.selectedCategory && props.selectedCategory.id !== 'all') {
     filtered = filtered.filter(study => {
-      return study.Category?.id === props.selectedCategory.id
+      return Number(study.Category?.id) === Number(props.selectedCategory.id)
     })
   }
   
@@ -294,16 +313,6 @@ const fetchCategories = async () => {
     errorMessage.value = error.response?.data?.message || '카테고리 목록 불러오기 실패'
   }
 }
-
-// 라우트 변경 감지
-watch(() => route.query.category, (newCategoryId) => {
-  if (newCategoryId) {
-    const category = categories.value.find(cat => cat.id === Number(newCategoryId))
-    if (category) {
-      emit('update:selectedCategory', category)
-    }
-  }
-}, { immediate: true })
 
 // 로그인 상태 확인
 const checkLoginStatus = () => {
@@ -463,119 +472,7 @@ defineExpose({
   background-color: #faf7f5;
 }
 
-.sidebar {
-  width: 250px;
-  background-color: #fbf9f8;
-  padding: 2rem 1rem;
-  border-right: 1px solid #eee5dd;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.sidebar-title {
-  color: #6f4e37;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #eee5dd;
-  text-align: center;
-}
-
-.category-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  text-align: center;
-}
-
-.category-item {
-  margin-bottom: 0.5rem;
-}
-
-.category-item a {
-  display: block;
-  padding: 0.5rem;
-  color: #4b3621;
-  text-decoration: none;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.category-item a:hover {
-  background-color: #eee5dd;
-  color: #6f4e37;
-}
-
-.category-item.selected a {
-  background-color: #eee5dd;
-  color: #6f4e37;
-  font-weight: 600;
-}
-
-.user-menu {
-  margin-bottom: 2rem;
-}
-
-.user-profile {
-  text-align: center;
-  padding: 1.5rem;
-  background-color: #f5f2ef;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  margin-top: auto;
-}
-
-.user-actions {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(111, 78, 55, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.user-actions.no-border {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-}
-
-.user-actions .menu-item {
-  width: 100%;
-  text-align: center;
-  padding: 0.75rem;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  background-color: #eee5dd;
-  color: #6f4e37;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.user-actions .menu-item:hover {
-  transform: translateY(-2px);
-  background-color: #e3d8ce;
-}
-
-.user-actions .menu-item.logout {
-  background-color: #6f4e37;
-  color: white;
-}
-
-.user-actions .menu-item.logout:hover {
-  background-color: #8b6b4a;
-}
-
-.user-actions .menu-item.signup {
-  background-color: #6f4e37;
-  color: white;
-}
-
-.user-actions .menu-item.signup:hover {
-  background-color: #8b6b4a;
-}
-
+/* Remove sidebar related styles */
 .main-content {
   flex: 1;
   padding: 2rem;
@@ -656,13 +553,6 @@ h3 {
 @media (max-width: 768px) {
   .mainpage-container {
     flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid #eee5dd;
-    padding: 1rem;
   }
 
   .main-content {

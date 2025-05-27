@@ -2093,32 +2093,3 @@ const getImageUrl = (path) => {
   border-bottom: 2.5px solid #6f4e37;
 }
 </style> 
-
-{"study":{
-  "id":7,
-  "title":"ㅁ2",
-  "description":"ㅁ2",
-  "start_date":"2025-05-25T00:00:00.000Z",
-  "end_date":"2025-05-26T00:00:00.000Z",
-  "max_participants":2,
-  "current_participants":3,
-  "createdAt":"2025-05-25T06:32:54.721Z",
-  "updatedAt":"2025-05-26T00:21:04.606Z",
-  "deletedAt":null,
-  "Category":{
-    "id":1,
-    "name":"IT",
-    "createdAt":"2025-05-19T01:40:16.296Z",
-    "updatedAt":"2025-05-19T01:40:16.296Z",
-    "deletedAt":null
-  },
-  "City":{
-    "id":1,
-    "name":
-    "부산광역시",
-    "createdAt":
-    "2025-05-19T01:40:19.359Z",
-    "updatedAt":"2025-05-19T01:40:19.359Z",
-    "deletedAt":null
-  },
-  "District":{"id":1,"name":"중구"},"Town":{"id":1,"name":"중앙동6가"},"User":{"userId":"test1234","nickname":"hyo"},"StudyThumbnails":[],"participants":[{"userId":"test1234","nickname":"hyo","isAuthor":true}]}}
