@@ -57,17 +57,17 @@
             </div>
           </div>
         </div>
-
-        <!-- 플로팅 스터디 만들기 버튼 -->
-        <button 
-          v-if="isLoggedIn" 
-          class="floating-create-btn" 
-          @click="goToCreateStudy"
-          title="새 스터디 만들기"
-        >
-          <span class="btn-text">+</span>
-        </button>
       </div>
+
+      <!-- 플로팅 스터디 만들기 버튼 -->
+      <button 
+        v-if="isLoggedIn" 
+        class="floating-create-btn" 
+        @click="goToCreateStudy"
+        title="새 스터디 만들기"
+      >
+        <span class="btn-text">+</span>
+      </button>
     </main>
   </div>
 </template>
@@ -238,12 +238,14 @@ const goToCreateStudy = () => {
 
 // 필터링된 스터디 목록
 const filteredStudies = computed(() => {
-  if (!props.selectedCategory) return []
-  const selectedCategoryId = Number(props.selectedCategory.id)
-  let filtered = studies.value.filter(study => {
-    const studyCategoryId = Number(study.Category?.id)
-    return studyCategoryId === selectedCategoryId
-  })
+  let filtered = studies.value
+  
+  // 카테고리 필터링
+  if (props.selectedCategory) {
+    filtered = filtered.filter(study => {
+      return study.Category?.id === props.selectedCategory.id
+    })
+  }
   
   // 검색어가 있는 경우 필터링
   if (searchQuery.value) {
@@ -303,16 +305,13 @@ watch(() => route.query.category, (newCategoryId) => {
   }
 }, { immediate: true })
 
-// // 로그인 상태 확인
-// const checkLoginStatus = () => {
-//   // TODO: 실제 로그인 상태 확인 로직 구현
-//   // 임시로 로그인 상태 체크
-//   const token = localStorage.getItem('token')
-//   if (token) {
-//     isLoggedIn.value = true
-//     username.value = '사용자' // TODO: 실제 사용자 이름으로 대체
-//   }
-// }
+// 로그인 상태 확인
+const checkLoginStatus = () => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    isLoggedIn.value = true
+  }
+}
 
 // 지역 선택 핸들러
 const handleSidoChange = async () => {
@@ -423,41 +422,13 @@ const resetLocation = () => {
   dongList.value = []
 }
 
-const appliedStudies = ref([])
-const createdStudies = ref([])
-
 // 초기 데이터 로드
 onMounted(async () => {
-  // await checkLoginStatus()
   await fetchCategories()
   await fetchStudies()
   await fetchSidoList()
   processSearchQuery()
-  
-  // 임시 데이터
-  appliedStudies.value = [
-    {
-      id: 3,
-      title: '알고리즘 스터디',
-      content: '코딩 테스트 대비 알고리즘 문제 풀이',
-      thumbnail: 'https://via.placeholder.com/150',
-      currentMembers: 4,
-      maxMembers: 6,
-      applicationStatus: '승인대기'
-    }
-  ]
-
-  createdStudies.value = [
-    {
-      id: 1,
-      title: '프로그래밍 스터디',
-      content: '함께 프로그래밍을 배우고 실력을 향상시켜요!',
-      thumbnail: 'https://via.placeholder.com/150',
-      currentMembers: 3,
-      maxMembers: 5,
-      status: '모집중'
-    }
-  ]
+  checkLoginStatus()
 
   // Add preload link for logo image
   const link = document.createElement('link')
@@ -917,7 +888,7 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: -2px; /* + 기호를 정확히 중앙에 위치시키기 위한 조정 */
+  margin-top: -2px;
 }
 
 .floating-create-btn:hover {
@@ -935,7 +906,8 @@ h3 {
   .floating-create-btn {
     width: 56px;
     height: 56px;
-    font-size: 1.5rem;
+    bottom: 1.5rem;
+    right: 1.5rem;
   }
 
   .floating-create-btn .btn-text {

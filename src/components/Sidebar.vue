@@ -32,7 +32,7 @@
           </router-link>
         </div>
         <div class="user-actions">
-        <router-link to="/mypage?tab=profile" class="menu-item">마이페이지 (내정보)</router-link>
+          <a href="#" @click.prevent="openMypageModal" class="menu-item">마이페이지 (내정보)</a>
           <a href="#" @click.prevent="logout" class="menu-item logout">로그아웃</a>
         </div>
       </template>
@@ -43,6 +43,13 @@
         </div>
       </template>
     </div>
+
+    <!-- 마이페이지 모달 -->
+    <div v-if="showMypageModal" class="modal-overlay" @click="closeMypageModal">
+      <div class="modal-content" @click.stop>
+        <MypageModal @close="closeMypageModal" />
+      </div>
+    </div>
   </aside>
 </template>
 
@@ -50,6 +57,7 @@
 import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
+import MypageModal from './MypageModal.vue'
 
 const props = defineProps({
   isMypage: {
@@ -75,6 +83,7 @@ const username = ref('')
 const appliedStudies = ref([])
 const createdStudies = ref([])
 const errorMessage = ref('')
+const showMypageModal = ref(false)
 errorMessage.value = ''
 
 // 카테고리 데이터 가져오기
@@ -170,7 +179,7 @@ const selectCategory = (category) => {
     path: '/',
     query: { 
       category: category.id,
-      categoryName: category.name 
+      categoryName: category.name
     }
   })
 }
@@ -208,7 +217,17 @@ const handleLogout = () => {
   username.value = ''
   appliedStudies.value = []
   createdStudies.value = []
-  router.push('/')
+  router.push('/login')
+}
+
+// 모달 열기
+const openMypageModal = () => {
+  showMypageModal.value = true
+}
+
+// 모달 닫기
+const closeMypageModal = () => {
+  showMypageModal.value = false
 }
 
 // 초기 데이터 로드
@@ -217,6 +236,18 @@ onMounted(async () => {
   await fetchUserProfile()
   await fetchAppliedStudies()
   await fetchCreatedStudies()
+
+  // 메인페이지에서만 전체 카테고리 선택
+  if (!props.isMypage && route.path === '/') {
+    emit('update:selectedCategory', { id: 'all', name: '전체' })
+    router.push({
+      path: '/',
+      query: { 
+        category: 'all',
+        categoryName: '전체'
+      }
+    })
+  }
 
   // 커스텀 이벤트 리스너 등록
   window.addEventListener('refreshSidebar', refreshSidebar)
@@ -456,5 +487,28 @@ onUnmounted(() => {
     background-color: rgba(255, 255, 255, 0.5);
     border-radius: 8px;
   }
+}
+
+/* 모달 스타일 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 </style> 
