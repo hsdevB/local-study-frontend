@@ -191,8 +191,24 @@ watch(() => route.query.category, (newCategoryId) => {
   }
 }, { immediate: true })
 
+// 초기 데이터 로드
+onMounted(async () => {
+  await fetchCategories()
+  await fetchStudies()
+  await fetchSidoList()
+  await processSearchQuery()  // categories가 로드된 후에 실행
+  checkLoginStatus()
+
+  // Add preload link for logo image
+  const link = document.createElement('link')
+  link.rel = 'preload'
+  link.as = 'image'
+  link.href = logoImage
+  document.head.appendChild(link)
+})
+
 // URL 쿼리 파라미터 처리
-const processSearchQuery = () => {
+const processSearchQuery = async () => {
   const query = route.query.search
   const categoryId = route.query.category
   const categoryName = route.query.categoryName
@@ -211,6 +227,7 @@ const processSearchQuery = () => {
     if (category) {
       emit('update:selectedCategory', category)
     } else {
+      // 카테고리를 찾지 못한 경우, 해당 ID로 새 카테고리 객체 생성
       emit('update:selectedCategory', {
         id: Number(categoryId),
         name: categoryName || '카테고리'
@@ -259,11 +276,23 @@ const goToCreateStudy = () => {
 const filteredStudies = computed(() => {
   let filtered = studies.value
   
+  console.log('Current selected category:', props.selectedCategory)
+  console.log('Total studies before filtering:', filtered.length)
+  
   // 카테고리 필터링
   if (props.selectedCategory && props.selectedCategory.id !== 'all') {
     filtered = filtered.filter(study => {
-      return Number(study.Category?.id) === Number(props.selectedCategory.id)
+      const studyCategoryId = Number(study.Category?.id)
+      const selectedCategoryId = Number(props.selectedCategory.id)
+      console.log('Comparing category IDs:', { 
+        studyCategoryId, 
+        selectedCategoryId,
+        studyTitle: study.title,
+        matches: studyCategoryId === selectedCategoryId
+      })
+      return studyCategoryId === selectedCategoryId
     })
+    console.log('Studies after category filtering:', filtered.length)
   }
   
   // 검색어가 있는 경우 필터링
@@ -297,6 +326,7 @@ const filteredStudies = computed(() => {
     })
   }
   
+  console.log('Final filtered studies count:', filtered.length)
   return filtered
 })
 
@@ -430,22 +460,6 @@ const resetLocation = () => {
   sigunguList.value = []
   dongList.value = []
 }
-
-// 초기 데이터 로드
-onMounted(async () => {
-  await fetchCategories()
-  await fetchStudies()
-  await fetchSidoList()
-  processSearchQuery()
-  checkLoginStatus()
-
-  // Add preload link for logo image
-  const link = document.createElement('link')
-  link.rel = 'preload'
-  link.as = 'image'
-  link.href = logoImage
-  document.head.appendChild(link)
-})
 
 // 이미지 로드 핸들러
 const handleImageLoad = (study) => {

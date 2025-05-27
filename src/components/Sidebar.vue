@@ -180,34 +180,50 @@ watch(() => localStorage.getItem('token'), (newToken) => {
 
 // 카테고리 선택 처리
 const selectCategory = (category) => {
+  console.log('Selected category:', category)
+  console.log('Current route:', route.path)
+  console.log('Current query:', route.query)
+
+  // 카테고리 선택 시 로컬 상태 업데이트
   if (category === null) {
-    // '전체' 카테고리 선택 시
     localSelectedCategory.value = { id: 'all', name: '전체' }
-    emit('update:selectedCategory', { id: 'all', name: '전체' })
-    router.push({
-      path: '/',
-      query: { 
-        category: 'all',
-        categoryName: '전체'
-      }
-    })
   } else {
-    // 기존 카테고리 선택 로직
     localSelectedCategory.value = category
-    emit('update:selectedCategory', category)
-    router.push({
-      path: '/',
-      query: { 
-        category: category.id,
-        categoryName: category.name
-      }
-    })
   }
+
+  // 부모 컴포넌트에 선택된 카테고리 전달
+  emit('update:selectedCategory', localSelectedCategory.value)
+
+  // 메인 페이지로 이동하면서 선택한 카테고리 정보 전달
+  const selectedCategory = category === null ? { id: 'all', name: '전체' } : category
+  router.push({
+    path: '/',
+    query: { 
+      category: selectedCategory.id === 'all' ? 'all' : Number(selectedCategory.id),
+      categoryName: selectedCategory.name
+    }
+  })
 }
 
 // props가 변경될 때 로컬 상태도 업데이트
 watch(() => props.selectedCategory, (newCategory) => {
-  localSelectedCategory.value = newCategory
+  if (newCategory) {
+    localSelectedCategory.value = newCategory
+  }
+}, { immediate: true })
+
+// 라우트 변경 감지
+watch(() => route.query.category, (newCategory) => {
+  if (newCategory) {
+    if (newCategory === 'all') {
+      localSelectedCategory.value = { id: 'all', name: '전체' }
+    } else {
+      const category = categories.value.find(c => c.id === newCategory)
+      if (category) {
+        localSelectedCategory.value = category
+      }
+    }
+  }
 }, { immediate: true })
 
 // 로그아웃 함수
@@ -263,8 +279,8 @@ onMounted(async () => {
   await fetchAppliedStudies()
   await fetchCreatedStudies()
 
-  // 메인페이지에서만 전체 카테고리 선택
-  if (!props.isMypage && route.path === '/') {
+  // 메인페이지에서만 전체 카테고리 선택 (스터디 상세 페이지에서 이동한 경우 제외)
+  if (!props.isMypage && route.path === '/' && !route.query.category && !route.query.fromStudyDetail) {
     emit('update:selectedCategory', { id: 'all', name: '전체' })
     router.push({
       path: '/',

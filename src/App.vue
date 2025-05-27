@@ -29,10 +29,9 @@
 import Header from './components/Header.vue'
 import Sidebar from './components/Sidebar.vue'
 import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const router = useRouter()
 const currentComponent = ref(null)
 const selectedCategory = ref({ id: 'all', name: '전체' })
 
@@ -46,21 +45,6 @@ watch(() => route.query.category, (newCategoryId) => {
       id: categoryId,
       name: route.query.categoryName || '카테고리'
     }
-  }
-}, { immediate: true })
-
-// 라우터 경로 변경 감지
-watch(() => route.path, (newPath) => {
-  if (newPath === '/') {
-    // 메인 페이지로 이동할 때 카테고리 초기화
-    selectedCategory.value = { id: 'all', name: '전체' }
-    router.push({
-      path: '/',
-      query: { 
-        category: 'all',
-        categoryName: '전체'
-      }
-    })
   }
 }, { immediate: true })
 

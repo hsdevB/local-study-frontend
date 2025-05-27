@@ -4,7 +4,9 @@
     <main class="main-content">
       <!-- 상단 영역 -->
       <div class="content-header flex-header">
-        <h2 class="category-title">{{ selectedCategory?.name }} 스터디</h2>
+        <h2 class="category-title">
+          <a href="#" @click.prevent="navigateToCategory" class="category-link">{{ selectedCategory?.name }} 스터디</a>
+        </h2>
       </div>
 
       <!-- 스터디 상세 정보 -->
@@ -849,10 +851,29 @@ const handleKickParticipant = async (userId) => {
 // 이미지 URL 처리 함수
 const getImageUrl = (path) => {
   if (!path) return logoImage
-  if (path.startsWith('/images/')) {
-    return `http://localhost:3000${path}`
+  if (path.startsWith('http')) return path
+  return `http://localhost:3000${path.startsWith('/') ? '' : '/'}${path}`
+}
+
+// 카테고리로 이동하는 함수 수정
+const navigateToCategory = () => {
+  if (selectedCategory.value) {
+    router.push({
+      path: '/',
+      query: { 
+        category: selectedCategory.value.id === 'all' ? 'all' : Number(selectedCategory.value.id),
+        categoryName: selectedCategory.value.name
+      }
+    })
+  } else {
+    router.push({
+      path: '/',
+      query: { 
+        category: 'all',
+        categoryName: '전체'
+      }
+    })
   }
-  return path
 }
 </script>
 
@@ -1051,6 +1072,18 @@ const getImageUrl = (path) => {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
+  line-height: 1.5;
+}
+
+.category-link {
+  color: #4b3621;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  font-weight: 600;
+}
+
+.category-link:hover {
+  color: #6f4e37;
 }
 
 .study-detail {
