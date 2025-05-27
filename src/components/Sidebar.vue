@@ -126,7 +126,7 @@ const fetchAppliedStudies = async () => {
     const res = await axios.get('http://localhost:3000/study-application/my', {
       headers: { Authorization: `Bearer ${token}` }
     })
-    appliedStudies.value = res.data.data || []
+    appliedStudies.value = (res.data.data || []).filter(app => app.status !== 'kicked')
   } catch {
     appliedStudies.value = []
   }
@@ -179,20 +179,36 @@ const selectCategory = (category) => {
 const logout = async () => {
   try {
     const token = localStorage.getItem('token')
+    if (!token) {
+      handleLogout()
+      return
+    }
+    
     await axios.post('http://localhost:3000/user/logout', {}, {
       headers: {
         Authorization: `Bearer ${token}`
       },
       withCredentials: true
     })
-    localStorage.removeItem('token')
-    isLoggedIn.value = false
-    userProfile.value = null
-    username.value = ''
-    router.push('/')
+    
+    handleLogout()
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || '로그아웃 실패'
+    console.error('로그아웃 중 오류 발생:', error)
+    // 에러가 발생하더라도 로컬 상태는 정리
+    handleLogout()
   }
+}
+
+// 로그아웃 후 상태 정리 함수
+const handleLogout = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userId')
+  isLoggedIn.value = false
+  userProfile.value = null
+  username.value = ''
+  appliedStudies.value = []
+  createdStudies.value = []
+  router.push('/')
 }
 
 // 초기 데이터 로드

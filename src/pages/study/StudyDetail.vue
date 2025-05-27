@@ -29,9 +29,7 @@
             <template v-else>
               <img 
                 v-show="!isImageLoading"
-                :src="study.StudyThumbnails?.[0]?.path.startsWith('/images/')
-                  ? 'http://localhost:3000' + study.StudyThumbnails[0].path
-                  : study.StudyThumbnails?.[0]?.path || logoImage"
+                :src="getImageUrl(study.StudyThumbnails?.[0]?.path)"
                 :alt="study.title" 
                 class="study-thumbnail" 
                 loading="lazy" 
@@ -235,10 +233,10 @@
             </template>
             <template v-else>
               <button
-                v-if="isLoggedIn && !applicationForThisStudy"
+                v-if="!isLoggedIn"
                 class="join-btn"
-                @click="handleJoinStudy"
-                :disabled="study.currentMembers >= study.maxMembers"
+                disabled
+                title="로그인 후 이용해주세요"
               >참여 신청</button>
               <template v-else-if="isLoggedIn && applicationForThisStudy && applicationForThisStudy.status === 'pending'">
                 <button class="join-btn" disabled>승인 대기중</button>
@@ -250,10 +248,11 @@
                 @click="handleLeaveStudy"
               >참여 취소</button>
               <button
-                v-else-if="!isLoggedIn"
-                class="login-btn"
-                @click="goToLogin"
-              >로그인하고 참가하기</button>
+                v-else-if="isLoggedIn && !applicationForThisStudy"
+                class="join-btn"
+                @click="handleJoinStudy"
+                :disabled="study.currentMembers >= study.maxMembers"
+              >참여 신청</button>
             </template>
           </div>
         </div>
@@ -276,7 +275,7 @@ const router = useRouter()
 const route = useRoute()
 const study = ref({})
 const categories = ref([])
-const isLoggedIn = ref(true)
+const isLoggedIn = ref(false)
 // const username = ref('')
 const selectedCategory = ref(null)
 const isParticipant = ref(false)
@@ -367,9 +366,15 @@ const handleImageError = () => {
 // 스터디 상세 정보 가져오기
 const fetchStudyDetail = async () => {
   try {
-    const res = await axios.get(`http://localhost:3000/study/${route.params.id}`)
+    const res = await axios.get(`http://localhost:3000/study/${route.params.id}`, {
+      withCredentials: true
+    })
     const s = res.data.data.study
-    const myUserId = localStorage.getItem('userId') // 현재 로그인한 내 userId
+    const myUserId = localStorage.getItem('userId')
+    const token = localStorage.getItem('token')
+
+    // 로그인 상태 확인
+    isLoggedIn.value = !!(token && myUserId)
 
     study.value = {
       id: s.id,
@@ -391,15 +396,16 @@ const fetchStudyDetail = async () => {
       participants: s.participants || [],
     }
 
-    // userId로 작성자 판별
     isAuthor.value = s.User?.userId === myUserId
     isParticipant.value = res.data.data.isParticipant || false
 
     if (study.value.category_id) {
       selectedCategory.value = categories.value.find(c => c.id === study.value.category_id)
     }
-    // 내 신청 목록 최신화
-    await fetchMyApplications()
+    
+    if (isLoggedIn.value) {
+      await fetchMyApplications()
+    }
   } catch (error) {
     errorMessage.value = error.response?.data?.message || '스터디 상세 정보 불러오기 실패'
   }
@@ -432,26 +438,32 @@ const fetchCategories = async () => {
 // 스터디 참가 처리
 const handleJoinStudy = async () => {
   if (!isLoggedIn.value) {
-    router.push('/login')
     return
   }
 
   try {
     const token = localStorage.getItem('token')
+    if (!token) {
+      return
+    }
     await axios.post(
       `http://localhost:3000/study-application/${study.value.id}`,
       {},
       {
         headers: {
           Authorization: `Bearer ${token}`
-        }
+        },
+        withCredentials: true
       }
     )
-    // 참가신청 성공 후 최신 데이터로 갱신
     await fetchStudyDetail()
     window.dispatchEvent(new Event('refreshSidebar'))
     alert('스터디 참가 신청이 완료되었습니다.')
   } catch (error) {
+    if (error.response?.status === 401) {
+      isLoggedIn.value = false
+      return
+    }
     errorMessage.value = error.response?.data?.message || '스터디 참가 실패'
   }
 }
@@ -466,11 +478,6 @@ const handleLeaveStudy = async () => {
   } catch (error) {
     errorMessage.value = error.response?.data?.message || '스터디 참가 취소 실패'
   }
-}
-
-// 로그인 페이지로 이동
-const goToLogin = () => {
-  router.push('/login')
 }
 
 // 수정 시작
@@ -709,14 +716,22 @@ const fetchDongList = async (districtId) => {
 const fetchMyApplications = async () => {
   try {
     const token = localStorage.getItem('token')
+    if (!token) {
+      applicationForThisStudy.value = null
+      return
+    }
     const res = await axios.get('http://localhost:3000/study-application/my', {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { 
+        Authorization: `Bearer ${token}` 
+      },
+      withCredentials: true
     })
-    // 내 신청 목록에서 현재 스터디 id와 일치하는 신청 찾기
     const found = res.data.data.find(app => app.study_id === study.value.id)
     applicationForThisStudy.value = found || null
-  } catch  {
-    applicationForThisStudy.value = null
+  } catch (error) {
+    if (error.response?.status === 401) {
+      applicationForThisStudy.value = null
+    }
   }
 }
 
@@ -794,25 +809,51 @@ watch(participantsTab, async (tab) => {
   }
 })
 
-// handleKickParticipant 함수를 즉시 추방 방식으로 변경하여, 버튼 클릭 시 바로 API를 호출하고 성공 시 UI에서 해당 유저를 즉시 제거하도록 수정합니다.
+// handleKickParticipant 함수를 수정하여 참여자 추방 시 신청 스터디 목록에서도 완전히 제거되도록 하겠습니다.
 const handleKickParticipant = async (userId) => {
   if (!userId) return;
   if (!confirm('정말로 이 참여자를 추방하시겠습니까?')) return;
 
   try {
     const token = localStorage.getItem('token');
+    // 참여자 추방 API 호출
     await axios.delete(
       `http://localhost:3000/study/${study.value.id}/participant/${userId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    // UI에서 바로 제거
+    
+    // UI에서 참여자 목록에서 제거
     study.value.participants = study.value.participants.filter(p => p.userId !== userId);
+    
+    // 현재 참여자 수 업데이트
+    study.value.currentMembers = study.value.participants.filter(p => 
+      (p.status === 'approved' || p.isAuthor) && p.status !== 'kicked'
+    ).length;
+
+    // 신청자 목록 새로고침
+    await fetchApplicants();
+    
+    // 사이드바 업데이트를 위한 이벤트 발생
+    window.dispatchEvent(new Event('refreshSidebar'));
+    
+    // 마이페이지의 신청 스터디 목록도 업데이트
+    window.dispatchEvent(new Event('refreshMypage'));
+    
     alert('참여자를 추방했습니다.');
   } catch (error) {
     console.error(error);
     alert('참여자 추방에 실패했습니다.');
   }
 };
+
+// 이미지 URL 처리 함수
+const getImageUrl = (path) => {
+  if (!path) return logoImage
+  if (path.startsWith('/images/')) {
+    return `http://localhost:3000${path}`
+  }
+  return path
+}
 </script>
 
 <style scoped>
@@ -1533,8 +1574,37 @@ const handleKickParticipant = async (userId) => {
 .join-btn:disabled {
   background-color: #c4b5a5;
   cursor: not-allowed;
+  position: relative;
 }
 
+/* 툴팁 스타일 주석 처리
+.join-btn:disabled:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  margin-bottom: 0.5rem;
+  z-index: 1000;
+}
+
+.join-btn:disabled:hover::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% - 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+}
+*/
 .leave-btn {
   background-color: #f5f2ef;
   color: #6f4e37;

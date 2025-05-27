@@ -229,7 +229,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import logoImage from '@/assets/logo.png'
 import axios from 'axios'
@@ -373,6 +373,7 @@ const fetchAppliedStudies = async () => {
       let statusKor = '대기'
       if (app.status === 'approved') statusKor = '승인'
       else if (app.status === 'rejected') statusKor = '거절'
+      else if (app.status === 'kicked') statusKor = '추방'
       return {
         id: s.id,
         title: s.title,
@@ -384,11 +385,12 @@ const fetchAppliedStudies = async () => {
         district: s.District?.name || '',
         town: s.Town?.name || '',
         thumbnail: (s.StudyThumbnails && s.StudyThumbnails[0]?.path) || logoImage,
-        applicationStatus: statusKor, // '승인', '거절', '대기'
+        applicationStatus: statusKor, // '승인', '거절', '대기', '추방'
         author: s.User?.nickname || '',
-        isImageLoading: true
+        isImageLoading: true,
+        status: app.status // 원본 상태값 저장
       }
-    })
+    }).filter(study => study.status !== 'kicked') // 추방된 스터디는 목록에서 제외
   } catch {
     appliedStudies.value = []
   }
@@ -485,7 +487,28 @@ onMounted(async () => {
   };
   preloadImages(createdStudies.value);
   preloadImages(appliedStudies.value);
-});
+
+  // 커스텀 이벤트 리스너 등록
+  window.addEventListener('refreshSidebar', refreshSidebar);
+  window.addEventListener('refreshMypage', refreshMypage);
+  window.addEventListener('profile-updated', refreshSidebar);
+})
+
+const refreshSidebar = async () => {
+  await fetchAppliedStudies()
+  await fetchCreatedStudies()
+}
+
+const refreshMypage = async () => {
+  await fetchAppliedStudies();
+  await fetchCreatedStudies();
+}
+
+onUnmounted(() => {
+  window.removeEventListener('refreshSidebar', refreshSidebar);
+  window.removeEventListener('refreshMypage', refreshMypage);
+  window.removeEventListener('profile-updated', refreshSidebar);
+})
 
 // 이미지 로드 핸들러
 const handleImageLoad = (study) => {

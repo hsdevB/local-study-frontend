@@ -93,7 +93,7 @@ const emit = defineEmits(['update:selectedCategory'])
 const router = useRouter()
 const route = useRoute()
 const categories = ref([])
-const isLoggedIn = ref(true)
+const isLoggedIn = ref(false)
 // const username = ref('홍길동')
 const searchQuery = ref('')
 
