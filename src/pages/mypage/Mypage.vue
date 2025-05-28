@@ -177,6 +177,13 @@
               >
                 거절
               </button>
+              <button 
+                class="tab-btn" 
+                :class="{ active: appliedTab === 'kicked' }"
+                @click="appliedTab = 'kicked'"
+              >
+                추방
+              </button>
             </div>
           </div>
           <div class="study-list">
@@ -313,6 +320,7 @@ const filteredAppliedStudies = computed(() => {
     if (appliedTab.value === 'waiting') return study.applicationStatus === '대기'
     if (appliedTab.value === 'approved') return study.applicationStatus === '승인'
     if (appliedTab.value === 'rejected') return study.applicationStatus === '거절'
+    if (appliedTab.value === 'kicked') return study.applicationStatus === '추방'
     return true
   })
 })
@@ -994,6 +1002,12 @@ const getImageUrl = (path) => {
 .study-status.completed {
   background-color: #f5f5f5;
   color: #757575;
+}
+
+.study-status.kicked {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
 }
 
 .study-members {
