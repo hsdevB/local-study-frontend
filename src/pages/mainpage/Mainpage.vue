@@ -53,7 +53,8 @@
               <span class="study-author">{{ study.author }}</span>
               <div class="study-status-group">
                 <span :class="['study-status', getStudyStatus(study)]">
-                  {{ getStudyStatus(study) === 'completed' ? '모집완료' : '모집중' }}
+                  {{ getStudyStatus(study) === 'completed' ? '모집완료' : 
+                     getStudyStatus(study) === 'ended' ? '종료' : '모집중' }}
                 </span>
                 <span class="study-members">{{ study.currentMembers }}/{{ study.maxMembers }}명</span>
               </div>
@@ -277,6 +278,15 @@ const goToCreateStudy = () => {
 
 // 스터디 상태 계산
 const getStudyStatus = (study) => {
+  // 종료 상태 체크
+  const today = new Date()
+  today.setHours(0, 0, 0, 0) // 시간을 00:00:00으로 설정
+  const endDate = new Date(study.endDate)
+  endDate.setHours(0, 0, 0, 0)
+  
+  if (today > endDate) {
+    return 'ended'
+  }
   if (study.currentMembers >= study.maxMembers) {
     return 'completed'
   }
@@ -429,7 +439,8 @@ const fetchStudies = async () => {
           district: study.District?.name || '',
           town: study.Town?.name || '',
           StudyThumbnails: study.StudyThumbnails,
-          isImageLoading: true
+          isImageLoading: true,
+          endDate: study.end_date
         }
       })
     } else {
@@ -945,5 +956,11 @@ h3 {
 .study-status.completed {
   background-color: #f5f5f5;
   color: #757575;
+}
+
+.study-status.ended {
+  background-color: #f5f5f5;
+  color: #9e9e9e;
+  border: 1px solid #e0e0e0;
 }
 </style>

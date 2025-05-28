@@ -114,7 +114,8 @@
             <div class="category-members-group">
               <div class="content-status">
                 <span :class="['study-status', getStudyStatus(study)]">
-                  {{ getStudyStatus(study) === 'completed' ? '모집완료' : '모집중' }}
+                  {{ getStudyStatus(study) === 'completed' ? '모집완료' : 
+                     getStudyStatus(study) === 'ended' ? '종료' : '모집중' }}
                 </span>
               </div>
               <div class="content-category">
@@ -243,27 +244,35 @@
               </template>
             </template>
             <template v-else>
-              <button
-                v-if="!isLoggedIn"
-                class="join-btn"
-                disabled
-                title="로그인 후 이용해주세요"
-              >참여 신청</button>
-              <template v-else-if="isLoggedIn && applicationForThisStudy && applicationForThisStudy.status === 'pending'">
-                <button class="join-btn" disabled>승인 대기중</button>
-                <button class="leave-btn" @click="handleCancelApplication">참여 취소</button>
+              <template v-if="!isLoggedIn">
+                <button class="join-btn" disabled title="로그인 후 이용해주세요">참여 신청</button>
               </template>
-              <button
-                v-else-if="isLoggedIn && applicationForThisStudy && applicationForThisStudy.status === 'accepted'"
-                class="leave-btn"
-                @click="handleLeaveStudy"
-              >참여 취소</button>
-              <button
-                v-else-if="isLoggedIn && !applicationForThisStudy"
-                class="join-btn"
-                @click="handleJoinStudy"
-                :disabled="study.currentMembers >= study.maxMembers"
-              >참여 신청</button>
+              <template v-else-if="isLoggedIn && applicationForThisStudy">
+                <template v-if="applicationForThisStudy.status === 'pending'">
+                  <button class="join-btn" disabled>승인 대기중</button>
+                  <button class="leave-btn" @click="handleCancelApplication">참여 취소</button>
+                </template>
+                <template v-else-if="applicationForThisStudy.status === 'accepted'">
+                  <button class="leave-btn" @click="handleLeaveStudy">참여 취소</button>
+                </template>
+                <template v-else-if="applicationForThisStudy.status === 'rejected'">
+                  <button class="join-btn" disabled>거절됨</button>
+                </template>
+                <template v-else-if="applicationForThisStudy.status === 'kicked'">
+                  <button class="join-btn" disabled>추방됨</button>
+                </template>
+              </template>
+              <template v-else-if="isLoggedIn && !applicationForThisStudy">
+                <template v-if="getStudyStatus(study) === 'completed'">
+                  <button class="join-btn" disabled>마감</button>
+                </template>
+                <template v-else-if="getStudyStatus(study) === 'ended'">
+                  <button class="join-btn" disabled>종료</button>
+                </template>
+                <template v-else>
+                  <button class="join-btn" @click="handleJoinStudy">참여 신청</button>
+                </template>
+              </template>
             </template>
           </div>
         </div>
@@ -904,6 +913,15 @@ const getImageUrl = (path) => {
 }
 
 const getStudyStatus = (study) => {
+  // 종료 상태 체크
+  const today = new Date()
+  today.setHours(0, 0, 0, 0) // 시간을 00:00:00으로 설정
+  const endDate = new Date(study.endDate)
+  endDate.setHours(0, 0, 0, 0)
+  
+  if (today > endDate) {
+    return 'ended'
+  }
   if (study.currentMembers >= study.maxMembers) {
     return 'completed'
   }
@@ -1580,6 +1598,12 @@ const getStudyStatus = (study) => {
   border: 1px solid #e0e0e0;
 }
 
+.study-status.ended {
+  background-color: #f5f5f5;
+  color: #9e9e9e;
+  border: 1px solid #e0e0e0;
+}
+
 .content-category {
   display: inline-block;
   padding: 0.5rem 0.7rem;
@@ -1679,7 +1703,7 @@ const getStudyStatus = (study) => {
   position: relative;
 }
 
-/* 툴팁 스타일 주석 처리
+/* 툴크 스타일 주석 처리
 .join-btn:disabled:hover::after {
   content: attr(title);
   position: absolute;
