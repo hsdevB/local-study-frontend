@@ -113,7 +113,6 @@ const dongList = ref([])
 
 // 스터디 목록 관련 상태
 const studies = ref([])
-const currentPage = ref(1)
 
 const errorMessage = ref('')
 errorMessage.value = ''
@@ -166,7 +165,6 @@ const calculateSimilarity = (str1, str2) => {
 // 검색어 처리 함수
 const handleSearch = (query) => {
   searchQuery.value = query
-  currentPage.value = 1 // 검색 시 첫 페이지로 이동
 }
 
 // 모든 필터 초기화
@@ -175,8 +173,6 @@ const resetAllFilters = () => {
   searchQuery.value = ''
   // 지역 선택 초기화
   resetLocation()
-  // 페이지 초기화
-  currentPage.value = 1
 }
 
 // 라우트 변경 감지
