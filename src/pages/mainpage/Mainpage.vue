@@ -46,7 +46,10 @@
             >
           </div>
           <div class="study-info">
-            <h3 class="study-title">{{ study.title }}</h3>
+            <h3 class="study-title">
+              {{ study.title }}
+              <span v-if="isNewStudy(study)" class="new-badge">NEW</span>
+            </h3>
             <p class="study-location">{{ study.city }} > {{ study.district }} > {{ study.town }}</p>
             <div class="study-meta">
               <span class="study-author">{{ study.author }}</span>
@@ -281,6 +284,19 @@ const getStudyStatus = (study) => {
   return 'recruiting'
 }
 
+// 스터디가 1주일 이내에 생성되었는지 확인하는 함수
+const isNewStudy = (study) => {
+  if (!study.createdAt) {
+    console.log('No createdAt for study:', study)
+    return false
+  }
+  const createdAt = new Date(study.createdAt)
+  const now = new Date()
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  console.log('Study createdAt:', createdAt, 'One week ago:', oneWeekAgo)
+  return createdAt >= oneWeekAgo
+}
+
 // 필터링된 스터디 목록
 const filteredStudies = computed(() => {
   let filtered = studies.value
@@ -412,6 +428,7 @@ const fetchStudies = async () => {
   try {
     const response = await axios.get('http://localhost:3000/study')
     if (response.data.success) {
+      console.log('Raw study data:', response.data.data[0]) // 첫 번째 스터디 데이터 로깅
       studies.value = response.data.data.map(study => {
         return {
           id: study.id,
@@ -427,9 +444,11 @@ const fetchStudies = async () => {
           town: study.Town?.name || '',
           StudyThumbnails: study.StudyThumbnails,
           isImageLoading: true,
-          endDate: study.end_date
+          endDate: study.end_date,
+          createdAt: study.created_at || study.createdAt // 두 가지 가능한 필드명 모두 체크
         }
       })
+      console.log('Processed study data:', studies.value[0]) // 처리된 첫 번째 스터디 데이터 로깅
     } else {
       errorMessage.value = response.data.message || '스터디 목록 불러오기 실패'
     }
@@ -712,6 +731,19 @@ h3 {
   font-weight: 600;
   margin: 0 0 0.5rem 0;
   line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.new-badge {
+  background-color: #ff6b6b;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .study-location {
