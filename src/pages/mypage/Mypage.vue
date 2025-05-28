@@ -120,9 +120,7 @@
                 </div>
                 <img 
                   v-show="!study.isImageLoading"
-                  :src="study.StudyThumbnails?.[0]?.path.startsWith('/images/')
-                    ? 'http://localhost:3000' + study.StudyThumbnails[0].path
-                    : study.StudyThumbnails?.[0]?.path || logoImage"
+                  :src="getImageUrl(study.StudyThumbnails?.[0]?.path)"
                   :alt="study.title" 
                   class="study-thumbnail-img"
                   @load="handleImageLoad(study)"
@@ -189,9 +187,7 @@
                 </div>
                 <img 
                   v-show="!study.isImageLoading"
-                  :src="study.StudyThumbnails?.[0]?.path.startsWith('/images/')
-                    ? 'http://localhost:3000' + study.StudyThumbnails[0].path
-                    : study.StudyThumbnails?.[0]?.path || logoImage"
+                  :src="getImageUrl(study.StudyThumbnails?.[0]?.path)"
                   :alt="study.title" 
                   class="study-thumbnail-img"
                   @load="handleImageLoad(study)"
@@ -399,7 +395,7 @@ const fetchAppliedStudies = async () => {
         city: s.City?.name || '',
         district: s.District?.name || '',
         town: s.Town?.name || '',
-        thumbnail: (s.StudyThumbnails && s.StudyThumbnails[0]?.path) || logoImage,
+        StudyThumbnails: s.StudyThumbnails || [],
         applicationStatus: statusKor, // '승인', '거절', '대기', '추방'
         author: s.User?.nickname || '',
         isImageLoading: true,
@@ -419,14 +415,14 @@ const fetchCreatedStudies = async () => {
       return;
     }
 
-    const response = await axios.get('http://localhost:3000/study/my', {
+    const response = await axios.get('http://localhost:3000/study-application/my-created', {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
 
-    if (response.data && response.data.studies) {
-      createdStudies.value = response.data.studies.map(study => ({
+    if (response.data.success && response.data.data) {
+      createdStudies.value = response.data.data.map(study => ({
         id: study.id,
         title: study.title,
         content: study.description,
@@ -438,8 +434,10 @@ const fetchCreatedStudies = async () => {
         city: study.City?.name || '',
         district: study.District?.name || '',
         town: study.Town?.name || '',
-        thumbnails: study.StudyThumbnails?.map(thumb => thumb.path) || [],
-        author: study.User?.nickname || ''
+        StudyThumbnails: study.StudyThumbnails || [],
+        author: study.User?.nickname || '',
+        participants: study.participants || [],
+        isImageLoading: true
       }));
     } else {
       createdStudies.value = [];
@@ -636,6 +634,13 @@ const changePassword = async () => {
     passwordError.value = '비밀번호 변경 중 오류가 발생했습니다.';
   }
 };
+
+const getImageUrl = (path) => {
+  if (!path) return logoImage
+  if (path.startsWith('data:')) return path // Base64 이미지인 경우
+  if (path.startsWith('http')) return path
+  return `http://localhost:3000/images/${path.split('/').pop()}`
+}
 </script>
 
 <style scoped>
