@@ -36,7 +36,6 @@
               v-show="!study.isImageLoading"
               :src="study.StudyThumbnails?.[0]?.path ? `http://localhost:3000/images/${study.StudyThumbnails[0].path.split('/').pop()}` : logoImage"
               :alt="study.title" 
-              loading="lazy" 
               decoding="async" 
               fetchpriority="high"
               width="400"
