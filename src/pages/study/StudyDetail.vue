@@ -5,7 +5,7 @@
       <!-- 상단 영역 -->
       <div class="content-header flex-header">
         <h2 class="category-title">
-          <a href="#" @click.prevent="navigateToCategory" class="category-link">{{ selectedCategory?.name }} 스터디</a>
+          {{ selectedCategory?.name }} 스터디
         </h2>
       </div>
 
@@ -20,11 +20,15 @@
             </div>
             <template v-if="isEditing">
               <template v-if="!thumbnailDeleted && editedStudy.thumbnail && editedStudy.thumbnail !== logoImage">
-                <img :src="editedStudy.thumbnail" alt="썸네일 미리보기" class="study-thumbnail" @load="handleImageLoad">
-                <button class="delete-thumbnail" @click.stop="deleteThumbnail" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; background-color: #eee5dd; border: 1px solid #e3d8ce; color: #6f4e37; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1; font-size: 1.2rem; font-weight: 700; line-height: 1; padding: 0;">×</button>
+                <div class="thumbnail-wrapper">
+                  <img :src="getImageUrl(editedStudy.thumbnail)" alt="썸네일 미리보기" class="study-thumbnail" @load="handleImageLoad">
+                  <button class="delete-thumbnail" @click.stop="deleteThumbnail">×</button>
+                </div>
               </template>
               <template v-else>
-                <div class="thumbnail-upload-empty" @click="triggerFileInput" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #8b6b4a; font-size: 1rem; background: #faf7f5; border-radius: 8px; cursor: pointer; border: 1.5px dashed #e3d8ce;">사진 등록</div>
+                <div class="thumbnail-upload-empty" @click="triggerFileInput">
+                  <span>사진 등록</span>
+                </div>
               </template>
               <input type="file" ref="fileInput" @change="handleThumbnailChange" accept="image/*" style="display: none">
             </template>
@@ -517,9 +521,9 @@ const startEditing = async () => {
     sido: sidoId,
     sigungu: sigunguId,
     dong: dongId,
-    thumbnail: study.value.StudyThumbnails[0]?.path || logoImage
+    thumbnail: study.value.StudyThumbnails?.[0]?.path || logoImage
   };
-  originalThumbnail.value = study.value.StudyThumbnails[0]?.path || logoImage;
+  originalThumbnail.value = study.value.StudyThumbnails?.[0]?.path || logoImage;
   thumbnailDeleted.value = false;
   originalParticipants.value = JSON.parse(JSON.stringify(study.value.participants));
   isEditing.value = true;
@@ -578,23 +582,42 @@ const handleUpdateStudy = async () => {
       return;
     }
 
-    // PUT 요청에 보낼 데이터 구성
-    const payload = {
-      title: editedStudy.value.title,
-      category_id: editedStudy.value.category_id,
-      max_participants: editedStudy.value.maxMembers,
-      start_date: editedStudy.value.startDate,
-      end_date: editedStudy.value.endDate,
-      description: editedStudy.value.content,
-      city_id: editedStudy.value.sido,
-      district_id: editedStudy.value.sigungu,
-      town_id: editedStudy.value.dong
-    };
+    // FormData 객체 생성
+    const formData = new FormData();
+    
+    // 기본 정보 추가
+    formData.append('title', editedStudy.value.title);
+    formData.append('category_id', editedStudy.value.category_id);
+    formData.append('max_participants', editedStudy.value.maxMembers);
+    formData.append('start_date', editedStudy.value.startDate);
+    formData.append('end_date', editedStudy.value.endDate);
+    formData.append('description', editedStudy.value.content);
+    formData.append('city_id', editedStudy.value.sido);
+    formData.append('district_id', editedStudy.value.sigungu);
+    formData.append('town_id', editedStudy.value.dong);
 
-    await axios.put(
+    // 썸네일 처리
+    if (thumbnailDeleted.value) {
+      formData.append('delete_thumbnail', 'true');
+    } else if (editedStudy.value.thumbnail && editedStudy.value.thumbnail.startsWith('data:')) {
+      // 새로운 이미지가 선택된 경우
+      const response = await fetch(editedStudy.value.thumbnail);
+      const blob = await response.blob();
+      formData.append('thumbnail', blob, 'thumbnail.jpg');
+    } else if (editedStudy.value.thumbnail === originalThumbnail.value) {
+      // 기존 이미지를 유지하는 경우
+      formData.append('keep_thumbnail', 'true');
+    }
+
+    const response = await axios.put(
       `http://localhost:3000/study/${study.value.id}`,
-      payload,
-      { headers: { Authorization: `Bearer ${token}` } }
+      formData,
+      { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        } 
+      }
     );
 
     // 추방할 유저 처리
@@ -605,7 +628,6 @@ const handleUpdateStudy = async () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } catch (e) {
-        // 개별 에러는 무시하고 계속 진행
         console.error(e);
       }
     }
@@ -615,6 +637,7 @@ const handleUpdateStudy = async () => {
     isEditing.value = false;
     await fetchStudyDetail(); // 최신 정보로 갱신
   } catch (error) {
+    console.error('스터디 수정 실패:', error);
     errorMessage.value = error.response?.data?.message || '스터디 수정 실패';
     alert('스터디 수정에 실패했습니다.');
   }
@@ -673,9 +696,21 @@ onMounted(() => {
   fetchStudyDetail()
 })
 
-const handleThumbnailChange = (e) => {
+const handleThumbnailChange = async (e) => {
   const file = e.target.files[0]
   if (file) {
+    // 파일 크기 체크 (5MB 제한)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('이미지 크기는 5MB를 초과할 수 없습니다.')
+      return
+    }
+
+    // 파일 타입 체크
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.')
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = (event) => {
       editedStudy.value.thumbnail = event.target.result
@@ -690,8 +725,10 @@ const triggerFileInput = () => {
 }
 
 const deleteThumbnail = () => {
-  thumbnailDeleted.value = true;
-  editedStudy.value.thumbnail = '';
+  if (confirm('썸네일을 삭제하시겠습니까?')) {
+    thumbnailDeleted.value = true;
+    editedStudy.value.thumbnail = logoImage;
+  }
 }
 
 const fetchSidoList = async () => {
@@ -854,32 +891,12 @@ const handleKickParticipant = async (userId) => {
   }
 };
 
-// 이미지 URL 처리 함수
+// 이미지 URL 처리 함수 수정
 const getImageUrl = (path) => {
   if (!path) return logoImage
+  if (path.startsWith('data:')) return path // Base64 이미지인 경우
   if (path.startsWith('http')) return path
-  return `http://localhost:3000${path.startsWith('/') ? '' : '/'}${path}`
-}
-
-// 카테고리로 이동하는 함수 수정
-const navigateToCategory = () => {
-  if (selectedCategory.value) {
-    router.push({
-      path: '/',
-      query: { 
-        category: selectedCategory.value.id === 'all' ? 'all' : Number(selectedCategory.value.id),
-        categoryName: selectedCategory.value.name
-      }
-    })
-  } else {
-    router.push({
-      path: '/',
-      query: { 
-        category: 'all',
-        categoryName: '전체'
-      }
-    })
-  }
+  return `http://localhost:3000/images/${path.split('/').pop()}`
 }
 
 const getStudyStatus = (study) => {
@@ -2181,5 +2198,58 @@ const getStudyStatus = (study) => {
   color: #6f4e37;
   border-bottom: 2.5px solid #6f4e37;
   padding-bottom: 0.3rem;
+}
+
+.thumbnail-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.delete-thumbnail {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: rgba(238, 229, 221, 0.9);
+  border: 1px solid #e3d8ce;
+  color: #6f4e37;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.delete-thumbnail:hover {
+  background-color: rgba(227, 216, 206, 0.9);
+  transform: scale(1.1);
+}
+
+.thumbnail-upload-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b6b4a;
+  font-size: 1rem;
+  background: #faf7f5;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1.5px dashed #e3d8ce;
+  transition: all 0.2s ease;
+}
+
+.thumbnail-upload-empty:hover {
+  background: #f5f2ef;
+  border-color: #c4b5a5;
 }
 </style> 

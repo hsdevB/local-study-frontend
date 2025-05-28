@@ -34,9 +34,7 @@
             </div>
             <img 
               v-show="!study.isImageLoading"
-              :src="study.StudyThumbnails?.[0]?.path.startsWith('/images/')
-                ? 'http://localhost:3000' + study.StudyThumbnails[0].path
-                : study.StudyThumbnails?.[0]?.path || logoImage"
+              :src="study.StudyThumbnails?.[0]?.path ? `http://localhost:3000/images/${study.StudyThumbnails[0].path.split('/').pop()}` : logoImage"
               :alt="study.title" 
               loading="lazy" 
               decoding="async" 
