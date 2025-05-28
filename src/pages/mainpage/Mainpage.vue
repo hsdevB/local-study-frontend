@@ -79,9 +79,6 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import logoImage from '@/assets/logo.png'
-// import mockStudies from '@/data/mockStudies.json'
-// import mockCategories from '@/data/mockCategories.json'
-// import mockLocations from '@/data/mockLocations.json'
 import axios from 'axios'
 
 const props = defineProps({
@@ -97,7 +94,6 @@ const router = useRouter()
 const route = useRoute()
 const categories = ref([])
 const isLoggedIn = ref(false)
-// const username = ref('홍길동')
 const searchQuery = ref('')
 
 // 지역 선택 관련 상태
@@ -107,9 +103,6 @@ const selectedDong = ref('')
 const sidoList = ref([])
 const sigunguList = ref([])
 const dongList = ref([])
-
-// 지역 데이터 매핑
-// const locationData = mockLocations.locationData
 
 // 스터디 목록 관련 상태
 const studies = ref([])
@@ -349,7 +342,6 @@ const filteredStudies = computed(() => {
 // 카테고리 데이터 가져오기
 const fetchCategories = async () => {
   try {
-    // categories.value = mockCategories.categories
     const res = await axios.get('http://localhost:3000/category')
     categories.value = res.data.data
     if (categories.value.length > 0 && !props.selectedCategory) {
