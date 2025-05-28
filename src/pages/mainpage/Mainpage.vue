@@ -310,8 +310,8 @@ const filteredStudies = computed(() => {
     if (query) {
       filtered = filtered.filter(study => {
         const titleSimilarity = calculateSimilarity(study.title, query)
-        const contentSimilarity = calculateSimilarity(study.content, query)
-        return Math.max(titleSimilarity, contentSimilarity) >= 0.3
+        const descriptionSimilarity = calculateSimilarity(study.description, query)
+        return Math.max(titleSimilarity, descriptionSimilarity) >= 0.3
       })
     }
   }
@@ -416,7 +416,7 @@ const fetchStudies = async () => {
         return {
           id: study.id,
           title: study.title,
-          content: study.description,
+          description: study.description,
           thumbnail: study.thumbnail,
           currentMembers: study.current_participants,
           maxMembers: study.max_participants,
@@ -440,7 +440,18 @@ const fetchStudies = async () => {
 
 // 스터디 상세 페이지로 이동
 const goToStudyDetail = (studyId) => {
-  router.push(`/study/${studyId}`)
+  const study = studies.value.find(s => s.id === studyId)
+  if (study && study.Category) {
+    router.push({
+      path: `/study/${studyId}`,
+      query: {
+        category: study.Category.id,
+        categoryName: study.Category.name
+      }
+    })
+  } else {
+    router.push(`/study/${studyId}`)
+  }
 }
 
 // 스터디 목록 스크롤 처리

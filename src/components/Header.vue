@@ -48,6 +48,8 @@ const handleSearch = () => {
       path: '/',
       query: { search: searchInput.value.trim() }
     })
+    // 검색 이벤트 발생
+    emit('search', searchInput.value.trim())
   }
 }
 

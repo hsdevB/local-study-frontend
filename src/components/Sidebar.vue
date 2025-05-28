@@ -6,9 +6,9 @@
       <ul class="category-list">
         <li 
           class="category-item"
-          :class="{ 'selected': !localSelectedCategory || localSelectedCategory.id === 'all' }"
+          :class="{ 'selected': localSelectedCategory && localSelectedCategory.id === 'all' }"
         >
-          <a href="#" @click.prevent="selectCategory(null)">전체</a>
+          <a href="#" @click.prevent="selectCategory({ id: 'all', name: '전체' })" class="category-link">전체</a>
         </li>
         <li 
           v-for="category in categories" 
@@ -16,7 +16,7 @@
           class="category-item"
           :class="{ 'selected': localSelectedCategory && localSelectedCategory.id === category.id }"
         >
-          <a href="#" @click.prevent="selectCategory(category)">{{ category.name }}</a>
+          <a href="#" @click.prevent="selectCategory(category)" class="category-link">{{ category.name }}</a>
         </li>
       </ul>
     </div>
@@ -180,13 +180,9 @@ watch(() => localStorage.getItem('token'), (newToken) => {
 
 // 카테고리 선택 처리
 const selectCategory = (category) => {
-  console.log('Selected category:', category)
-  console.log('Current route:', route.path)
-  console.log('Current query:', route.query)
-
   // 카테고리 선택 시 로컬 상태 업데이트
   if (category === null) {
-    localSelectedCategory.value = { id: 'all', name: '전체' }
+    localSelectedCategory.value = null
   } else {
     localSelectedCategory.value = category
   }
@@ -195,34 +191,46 @@ const selectCategory = (category) => {
   emit('update:selectedCategory', localSelectedCategory.value)
 
   // 메인 페이지로 이동하면서 선택한 카테고리 정보 전달
-  const selectedCategory = category === null ? { id: 'all', name: '전체' } : category
-  router.push({
-    path: '/',
-    query: { 
-      category: selectedCategory.id === 'all' ? 'all' : Number(selectedCategory.id),
-      categoryName: selectedCategory.name
-    }
-  })
+  if (category === null) {
+    router.push({ path: '/' })
+  } else {
+    router.push({
+      path: '/',
+      query: { 
+        category: category.id === 'all' ? 'all' : Number(category.id),
+        categoryName: category.name
+      }
+    })
+  }
 }
+
+// 라우트 변경 감지
+watch(() => route.query, (newQuery) => {
+  // 검색어가 있으면 전체 카테고리로 설정
+  if (newQuery.search) {
+    localSelectedCategory.value = { id: 'all', name: '전체' }
+  }
+  // 마이페이지의 신청스터디나 운영스터디 탭이면 카테고리 선택 해제
+  else if (newQuery.tab === 'applied' || newQuery.tab === 'created') {
+    localSelectedCategory.value = null
+  }
+  // 카테고리 변경 감지
+  else if (newQuery.category) {
+    if (newQuery.category === 'all') {
+      localSelectedCategory.value = { id: 'all', name: '전체' }
+    } else {
+      const category = categories.value.find(c => c.id === Number(newQuery.category))
+      if (category) {
+        localSelectedCategory.value = category
+      }
+    }
+  }
+}, { immediate: true })
 
 // props가 변경될 때 로컬 상태도 업데이트
 watch(() => props.selectedCategory, (newCategory) => {
   if (newCategory) {
     localSelectedCategory.value = newCategory
-  }
-}, { immediate: true })
-
-// 라우트 변경 감지
-watch(() => route.query.category, (newCategory) => {
-  if (newCategory) {
-    if (newCategory === 'all') {
-      localSelectedCategory.value = { id: 'all', name: '전체' }
-    } else {
-      const category = categories.value.find(c => c.id === newCategory)
-      if (category) {
-        localSelectedCategory.value = category
-      }
-    }
   }
 }, { immediate: true })
 
@@ -344,7 +352,7 @@ onUnmounted(() => {
   margin-bottom: 0.5rem;
 }
 
-.category-item a {
+.category-link {
   display: block;
   padding: 0.5rem;
   color: #4b3621;
@@ -352,14 +360,15 @@ onUnmounted(() => {
   border-radius: 6px;
   transition: all 0.2s ease;
   font-size: 1rem;
+  background-color: transparent;
 }
 
-.category-item a:hover {
+.category-link:hover {
   background-color: #eee5dd !important;
   color: #6f4e37 !important;
 }
 
-.category-item.selected a {
+.category-item.selected .category-link {
   background-color: #eee5dd;
   color: #6f4e37;
   font-weight: 600;

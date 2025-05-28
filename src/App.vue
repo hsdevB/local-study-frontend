@@ -29,9 +29,10 @@
 import Header from './components/Header.vue'
 import Sidebar from './components/Sidebar.vue'
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 const currentComponent = ref(null)
 const selectedCategory = ref({ id: 'all', name: '전체' })
 
@@ -53,11 +54,24 @@ const isSignupPage = computed(() => route.path === '/signup')
 const isFindPasswordPage = computed(() => route.path === '/find-password')
 const isMypagePage = computed(() => route.path === '/mypage')
 const handleHeaderSearch = (query) => {
+  // 검색 시 전체 카테고리로 설정
+  selectedCategory.value = { id: 'all', name: '전체' }
+  
   // 현재 라우트가 메인 페이지인 경우에만 검색 실행
   if (route.path === '/') {
     if (currentComponent.value?.handleSearch) {
       currentComponent.value.handleSearch(query)
     }
+  } else {
+    // 메인 페이지가 아닌 경우 메인 페이지로 이동하면서 검색
+    router.push({
+      path: '/',
+      query: { 
+        search: query,
+        category: 'all',
+        categoryName: '전체'
+      }
+    })
   }
 }
 
