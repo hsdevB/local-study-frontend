@@ -620,6 +620,10 @@ const handleUpdateStudy = async () => {
       }
     );
 
+    if (!response.data.success) {
+      throw new Error(response.data.message || '스터디 수정에 실패했습니다.');
+    }
+
     // 추방할 유저 처리
     for (const userId of kickedUserIds.value) {
       try {
