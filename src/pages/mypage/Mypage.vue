@@ -427,7 +427,7 @@ const fetchAppliedStudies = async () => {
         isImageLoading: true,
         status: app.status // 원본 상태값 저장
       }
-    }).filter(study => study.status !== 'kicked') // 추방된 스터디는 목록에서 제외
+    })
   } catch {
     appliedStudies.value = []
   }

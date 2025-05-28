@@ -141,7 +141,7 @@ const fetchAppliedStudies = async () => {
     const res = await axios.get('http://localhost:3000/study-application/my', {
       headers: { Authorization: `Bearer ${token}` }
     })
-    appliedStudies.value = (res.data.data || []).filter(app => app.status !== 'kicked')
+    appliedStudies.value = res.data.data || []
   } catch {
     appliedStudies.value = []
   }
