@@ -739,11 +739,30 @@ h3 {
 .new-badge {
   background-color: #ff6b6b;
   color: white;
-  font-size: 0.7rem;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+  font-size: 0.4rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 5px;
   font-weight: 600;
   letter-spacing: 0.5px;
+  animation: pulse 2s infinite;
+  display: inline-block;
+  transform-origin: center;
+  box-shadow: 0 0 0 rgba(255, 107, 107, 0.4);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+  }
 }
 
 .study-location {
