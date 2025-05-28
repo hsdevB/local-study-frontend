@@ -350,6 +350,18 @@ const filteredStudies = computed(() => {
       return matchesSido
     })
   }
+
+  // 상태별 정렬 (모집중 > 모집완료 > 마감)
+  filtered.sort((a, b) => {
+    const statusOrder = {
+      'recruiting': 0,
+      'completed': 1,
+      'ended': 2
+    }
+    const statusA = getStudyStatus(a)
+    const statusB = getStudyStatus(b)
+    return statusOrder[statusA] - statusOrder[statusB]
+  })
   
   console.log('Final filtered studies count:', filtered.length)
   return filtered
