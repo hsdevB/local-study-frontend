@@ -287,37 +287,24 @@ const getStudyStatus = (study) => {
 // 스터디가 1주일 이내에 생성되었는지 확인하는 함수
 const isNewStudy = (study) => {
   if (!study.createdAt) {
-    console.log('No createdAt for study:', study)
     return false
   }
   const createdAt = new Date(study.createdAt)
   const now = new Date()
   const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-  console.log('Study createdAt:', createdAt, 'One week ago:', oneWeekAgo)
   return createdAt >= oneWeekAgo
 }
 
 // 필터링된 스터디 목록
 const filteredStudies = computed(() => {
   let filtered = studies.value
-  
-  console.log('Current selected category:', props.selectedCategory)
-  console.log('Total studies before filtering:', filtered.length)
-  
   // 카테고리 필터링
   if (props.selectedCategory && props.selectedCategory.id !== 'all') {
     filtered = filtered.filter(study => {
       const studyCategoryId = Number(study.Category?.id)
       const selectedCategoryId = Number(props.selectedCategory.id)
-      console.log('Comparing category IDs:', { 
-        studyCategoryId, 
-        selectedCategoryId,
-        studyTitle: study.title,
-        matches: studyCategoryId === selectedCategoryId
-      })
       return studyCategoryId === selectedCategoryId
     })
-    console.log('Studies after category filtering:', filtered.length)
   }
   
   // 검색어가 있는 경우 필터링
@@ -363,7 +350,6 @@ const filteredStudies = computed(() => {
     return statusOrder[statusA] - statusOrder[statusB]
   })
   
-  console.log('Final filtered studies count:', filtered.length)
   return filtered
 })
 
@@ -440,7 +426,6 @@ const fetchStudies = async () => {
   try {
     const response = await axios.get('http://localhost:3000/study')
     if (response.data.success) {
-      console.log('Raw study data:', response.data.data[0]) // 첫 번째 스터디 데이터 로깅
       studies.value = response.data.data.map(study => {
         return {
           id: study.id,
@@ -460,7 +445,6 @@ const fetchStudies = async () => {
           createdAt: study.created_at || study.createdAt // 두 가지 가능한 필드명 모두 체크
         }
       })
-      console.log('Processed study data:', studies.value[0]) // 처리된 첫 번째 스터디 데이터 로깅
     } else {
       errorMessage.value = response.data.message || '스터디 목록 불러오기 실패'
     }
@@ -893,8 +877,8 @@ h3 {
   position: fixed;
   bottom: 5rem;
   right: 5rem;
-  width: 64px;
-  height: 64px;
+  width: 70px;
+  height: 70px;
   border: none;
   border-radius: 50%;
   background-color: #6f4e37;
@@ -906,17 +890,16 @@ h3 {
   justify-content: center;
   box-shadow: 0 4px 12px rgba(111, 78, 55, 0.2);
   z-index: 1000;
-  font-size: 1.75rem;
   font-weight: 500;
 }
 
 .floating-create-btn .btn-text {
-  font-size: 2rem;
+  font-size: 2.5rem;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: -2px;
+  margin-top: -6px;
 }
 
 .floating-create-btn:hover {
