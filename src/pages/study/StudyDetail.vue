@@ -2208,12 +2208,19 @@ const getStudyStatus = (study) => {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+}
+
+.thumbnail-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .delete-thumbnail {
   position: absolute;
   top: 8px;
-  right: 8px;
+  right: 25px;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -2230,6 +2237,7 @@ const getStudyStatus = (study) => {
   line-height: 1;
   padding: 0;
   transition: all 0.2s ease;
+  transform: translate(0, 0);
 }
 
 .delete-thumbnail:hover {
