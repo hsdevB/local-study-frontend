@@ -318,7 +318,7 @@ onUnmounted(() => {
 <style scoped>
 .sidebar {
   width: 250px;
-  background-color: #fbf9f8;
+  background-color: #faf7f5;
   padding: 2rem 1rem;
   border-right: 1px solid #eee5dd;
   display: flex;

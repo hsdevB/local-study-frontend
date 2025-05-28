@@ -47,7 +47,7 @@
           </div>
           <div class="study-info">
             <h3 class="study-title">
-              {{ study.title }}
+              <span class="study-title-text">{{ study.title }}</span>
               <span v-if="isNewStudy(study)" class="new-badge">NEW</span>
             </h3>
             <p class="study-location">{{ study.city }} > {{ study.district }} > {{ study.town }}</p>
@@ -730,6 +730,19 @@ h3 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
+}
+
+.study-title span {
+  flex-shrink: 0;
+}
+
+.study-title-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  font-weight: 700;
 }
 
 .new-badge {

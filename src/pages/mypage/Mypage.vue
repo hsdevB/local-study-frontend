@@ -135,7 +135,10 @@
                 >
               </div>
               <div class="study-info">
-                <h3 class="study-title">{{ study.title }}</h3>
+                <h3 class="study-title">
+                  <span class="study-title-text">{{ study.title }}</span>
+                  <span v-if="isNewStudy(study)" class="new-badge">NEW</span>
+                </h3>
                 <p class="study-location">{{ study.city }} > {{ study.district }} > {{ study.town }}</p>
                 <div class="study-meta">
                   <span class="study-author">{{ study.author }}</span>
@@ -210,7 +213,10 @@
                 >
               </div>
               <div class="study-info">
-                <h3 class="study-title">{{ study.title }}</h3>
+                <h3 class="study-title">
+                  <span class="study-title-text">{{ study.title }}</span>
+                  <span v-if="isNewStudy(study)" class="new-badge">NEW</span>
+                </h3>
                 <p class="study-location">{{ study.city }} > {{ study.district }} > {{ study.town }}</p>
                 <div class="study-meta">
                   <span class="study-author">{{ study.author }}</span>
@@ -425,7 +431,8 @@ const fetchAppliedStudies = async () => {
         applicationStatus: statusKor, // '승인', '거절', '대기', '추방'
         author: s.User?.nickname || '',
         isImageLoading: true,
-        status: app.status // 원본 상태값 저장
+        status: app.status, // 원본 상태값 저장
+        createdAt: s.created_at || s.createdAt || app.created_at || app.createdAt // Study와 StudyApplication 모두에서 createdAt 확인
       }
     })
   } catch {
@@ -463,7 +470,8 @@ const fetchCreatedStudies = async () => {
         StudyThumbnails: study.StudyThumbnails || [],
         author: study.User?.nickname || '',
         participants: study.participants || [],
-        isImageLoading: true
+        isImageLoading: true,
+        createdAt: study.created_at || study.createdAt // createdAt 필드 추가
       }));
     } else {
       createdStudies.value = [];
@@ -666,6 +674,17 @@ const getImageUrl = (path) => {
   if (path.startsWith('data:')) return path // Base64 이미지인 경우
   if (path.startsWith('http')) return path
   return `http://localhost:3000/images/${path.split('/').pop()}`
+}
+
+// 스터디가 1주일 이내에 생성되었는지 확인하는 함수
+const isNewStudy = (study) => {
+  if (!study.createdAt) {
+    return false
+  }
+  const createdAt = new Date(study.createdAt)
+  const now = new Date()
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  return createdAt >= oneWeekAgo
 }
 </script>
 
@@ -944,6 +963,51 @@ const getImageUrl = (path) => {
   font-weight: 600;
   margin: 0 0 0.5rem 0;
   line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.study-title span {
+  flex-shrink: 0;
+}
+
+.study-title-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  font-weight: 700;
+}
+
+.new-badge {
+  background-color: #ff6b6b;
+  color: white;
+  font-size: 0.4rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  animation: pulse 2s infinite;
+  display: inline-block;
+  transform-origin: center;
+  box-shadow: 0 0 0 rgba(255, 107, 107, 0.4);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+  }
 }
 
 .study-location {
