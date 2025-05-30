@@ -17,7 +17,7 @@
               <option v-for="sigungu in sigunguList" :key="sigungu.id" :value="sigungu.id">{{ sigungu.name }}</option>
             </select>
             <h3 style="color: #6f4e37; font-size: 1rem; text-align: center; margin-top: 1px; margin-left: 4px;"> > </h3>
-            <select v-model="selectedDong" class="form-select" :disabled="!selectedSigungu">
+            <select v-model="selectedDong" class="form-select" :disabled="!selectedSigungu" @change="handleDongChange">
               <option value="">읍/면/동 선택</option>
               <option v-for="dong in dongList" :key="dong.id" :value="dong.id">{{ dong.name }}</option>
             </select>
@@ -381,13 +381,23 @@ const checkLoginStatus = () => {
 
 // 지역 선택 핸들러
 const handleSidoChange = async () => {
-  selectedSigungu.value = ''
-  selectedDong.value = ''
-  selectedSigunguName.value = ''
-  selectedDongName.value = ''
-  sigunguList.value = []
-  dongList.value = []
-  if (selectedSido.value) {
+  if (!selectedSido.value) {
+    // 시/도 선택을 초기화할 때
+    selectedSidoName.value = ''
+    selectedSigungu.value = ''
+    selectedSigunguName.value = ''
+    selectedDong.value = ''
+    selectedDongName.value = ''
+    sigunguList.value = []
+    dongList.value = []
+  } else {
+    // 시/도를 선택했을 때
+    selectedSigungu.value = ''
+    selectedDong.value = ''
+    selectedSigunguName.value = ''
+    selectedDongName.value = ''
+    sigunguList.value = []
+    dongList.value = []
     const selectedSidoObj = sidoList.value.find(sido => sido.id === selectedSido.value)
     selectedSidoName.value = selectedSidoObj ? selectedSidoObj.name : ''
     await fetchSigunguList(selectedSido.value)
@@ -395,13 +405,33 @@ const handleSidoChange = async () => {
 }
 
 const handleSigunguChange = async () => {
-  selectedDong.value = ''
-  selectedDongName.value = ''
-  dongList.value = []
-  if (selectedSido.value && selectedSigungu.value) {
-    const selectedSigunguObj = sigunguList.value.find(sigungu => sigungu.id === selectedSigungu.value)
-    selectedSigunguName.value = selectedSigunguObj ? selectedSigunguObj.name : ''
-    await fetchDongList(selectedSigungu.value)
+  if (!selectedSigungu.value) {
+    // 시/군/구 선택을 초기화할 때
+    selectedSigunguName.value = ''
+    selectedDong.value = ''
+    selectedDongName.value = ''
+    dongList.value = []
+  } else {
+    // 시/군/구를 선택했을 때
+    selectedDong.value = ''
+    selectedDongName.value = ''
+    dongList.value = []
+    if (selectedSido.value && selectedSigungu.value) {
+      const selectedSigunguObj = sigunguList.value.find(sigungu => sigungu.id === selectedSigungu.value)
+      selectedSigunguName.value = selectedSigunguObj ? selectedSigunguObj.name : ''
+      await fetchDongList(selectedSigungu.value)
+    }
+  }
+}
+
+const handleDongChange = () => {
+  if (!selectedDong.value) {
+    // 읍/면/동 선택을 초기화할 때
+    selectedDongName.value = ''
+  } else {
+    // 읍/면/동을 선택했을 때
+    const selectedDongObj = dongList.value.find(dong => dong.id === selectedDong.value)
+    selectedDongName.value = selectedDongObj ? selectedDongObj.name : ''
   }
 }
 
