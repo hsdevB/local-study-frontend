@@ -107,6 +107,11 @@ const sidoList = ref([])
 const sigunguList = ref([])
 const dongList = ref([])
 
+// 지역 이름 매핑을 위한 상태
+const selectedSidoName = ref('')
+const selectedSigunguName = ref('')
+const selectedDongName = ref('')
+
 // 스터디 목록 관련 상태
 const studies = ref([])
 
@@ -320,15 +325,15 @@ const filteredStudies = computed(() => {
   }
 
   // 지역 필터링
-  if (selectedSido.value) {
+  if (selectedSidoName.value) {
     filtered = filtered.filter(study => {
-      const matchesSido = study.city === selectedSido.value
+      const matchesSido = study.city === selectedSidoName.value
       
-      if (selectedSigungu.value) {
-        const matchesSigungu = study.district === selectedSigungu.value
+      if (selectedSigunguName.value) {
+        const matchesSigungu = study.district === selectedSigunguName.value
         
-        if (selectedDong.value) {
-          return matchesSido && matchesSigungu && study.town === selectedDong.value
+        if (selectedDongName.value) {
+          return matchesSido && matchesSigungu && study.town === selectedDongName.value
         }
         
         return matchesSido && matchesSigungu
@@ -378,17 +383,24 @@ const checkLoginStatus = () => {
 const handleSidoChange = async () => {
   selectedSigungu.value = ''
   selectedDong.value = ''
+  selectedSigunguName.value = ''
+  selectedDongName.value = ''
   sigunguList.value = []
   dongList.value = []
   if (selectedSido.value) {
+    const selectedSidoObj = sidoList.value.find(sido => sido.id === selectedSido.value)
+    selectedSidoName.value = selectedSidoObj ? selectedSidoObj.name : ''
     await fetchSigunguList(selectedSido.value)
   }
 }
 
 const handleSigunguChange = async () => {
   selectedDong.value = ''
+  selectedDongName.value = ''
   dongList.value = []
   if (selectedSido.value && selectedSigungu.value) {
+    const selectedSigunguObj = sigunguList.value.find(sigungu => sigungu.id === selectedSigungu.value)
+    selectedSigunguName.value = selectedSigunguObj ? selectedSigunguObj.name : ''
     await fetchDongList(selectedSigungu.value)
   }
 }
@@ -493,6 +505,9 @@ const resetLocation = () => {
   selectedSido.value = ''
   selectedSigungu.value = ''
   selectedDong.value = ''
+  selectedSidoName.value = ''
+  selectedSigunguName.value = ''
+  selectedDongName.value = ''
   sigunguList.value = []
   dongList.value = []
 }
