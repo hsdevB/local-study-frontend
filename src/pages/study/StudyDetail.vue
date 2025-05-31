@@ -252,7 +252,7 @@
                   <button class="join-btn" disabled>승인 대기중</button>
                   <button class="leave-btn" @click="handleCancelApplication">참여 취소</button>
                 </template>
-                <template v-else-if="applicationForThisStudy.status === 'accepted'">
+                <template v-else-if="applicationForThisStudy.status === 'approved'">
                   <button class="leave-btn" @click="handleLeaveStudy">참여 취소</button>
                 </template>
                 <template v-else-if="applicationForThisStudy.status === 'rejected'">
@@ -491,15 +491,32 @@ const handleJoinStudy = async () => {
 
 // 스터디 참가 취소 처리
 const handleLeaveStudy = async () => {
-  try {
-    await axios.delete(`http://localhost:3000/study/${study.value.id}/apply`)
-    isParticipant.value = false
-    study.value.currentMembers--
-    alert('스터디 참가가 취소되었습니다.')
-  } catch (error) {
-    errorMessage.value = error.response?.data?.message || '스터디 참가 취소 실패'
+  if (!confirm('정말로 스터디를 탈퇴하시겠습니까?')) {
+    return;
   }
-}
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.delete(
+      `http://localhost:3000/study-application/${applicationForThisStudy.value.id}`,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    if (response.data.success) {
+      // 스터디 상세 정보 새로고침
+      await fetchStudyDetail();
+      // 사이드바 새로고침 이벤트 발생
+      window.dispatchEvent(new Event('refreshSidebar'));
+      alert('스터디를 탈퇴했습니다.');
+    } else {
+      alert(response.data.message || '스터디 탈퇴에 실패했습니다.');
+    }
+  } catch (error) {
+    alert(error.response?.data?.message || '스터디 탈퇴 중 오류가 발생했습니다.');
+  }
+};
 
 // 수정 시작
 const startEditing = async () => {
