@@ -410,31 +410,33 @@ const fetchAppliedStudies = async () => {
       headers: { Authorization: `Bearer ${token}` }
     })
     // 데이터 가공: StudyApplication + Study join 구조
-    appliedStudies.value = (res.data.data || []).map(app => {
-      const s = app.Study || {}
-      // 상태 한글 변환
-      let statusKor = '대기'
-      if (app.status === 'approved') statusKor = '승인'
-      else if (app.status === 'rejected') statusKor = '거절'
-      else if (app.status === 'kicked') statusKor = '추방'
-      return {
-        id: s.id,
-        title: s.title,
-        content: s.description,
-        currentMembers: s.current_participants,
-        maxMembers: s.max_participants,
-        category: s.Category?.name || '',
-        city: s.City?.name || '',
-        district: s.District?.name || '',
-        town: s.Town?.name || '',
-        StudyThumbnails: s.StudyThumbnails || [],
-        applicationStatus: statusKor, // '승인', '거절', '대기', '추방'
-        author: s.User?.nickname || '',
-        isImageLoading: true,
-        status: app.status, // 원본 상태값 저장
-        createdAt: s.created_at || s.createdAt || app.created_at || app.createdAt // Study와 StudyApplication 모두에서 createdAt 확인
-      }
-    })
+    appliedStudies.value = (res.data.data || [])
+      .filter(app => app.Study && !app.Study.deleted_at) // 삭제된 스터디 필터링
+      .map(app => {
+        const s = app.Study || {}
+        // 상태 한글 변환
+        let statusKor = '대기'
+        if (app.status === 'approved') statusKor = '승인'
+        else if (app.status === 'rejected') statusKor = '거절'
+        else if (app.status === 'kicked') statusKor = '추방'
+        return {
+          id: s.id,
+          title: s.title,
+          content: s.description,
+          currentMembers: s.current_participants,
+          maxMembers: s.max_participants,
+          category: s.Category?.name || '',
+          city: s.City?.name || '',
+          district: s.District?.name || '',
+          town: s.Town?.name || '',
+          StudyThumbnails: s.StudyThumbnails || [],
+          applicationStatus: statusKor, // '승인', '거절', '대기', '추방'
+          author: s.User?.nickname || '',
+          isImageLoading: true,
+          status: app.status, // 원본 상태값 저장
+          createdAt: s.created_at || s.createdAt || app.created_at || app.createdAt // Study와 StudyApplication 모두에서 createdAt 확인
+        }
+      })
   } catch {
     appliedStudies.value = []
   }

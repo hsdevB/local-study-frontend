@@ -141,7 +141,8 @@ const fetchAppliedStudies = async () => {
     const res = await axios.get('http://localhost:3000/study-application/my', {
       headers: { Authorization: `Bearer ${token}` }
     })
-    appliedStudies.value = res.data.data || []
+    appliedStudies.value = (res.data.data || [])
+      .filter(app => app.Study && !app.Study.deleted_at)
   } catch {
     appliedStudies.value = []
   }
@@ -157,7 +158,8 @@ const fetchCreatedStudies = async () => {
     const res = await axios.get('http://localhost:3000/study-application/my-created', {
       headers: { Authorization: `Bearer ${token}` }
     })
-    createdStudies.value = res.data.data || []
+    createdStudies.value = (res.data.data || [])
+      .filter(study => !study.deleted_at)
   } catch {
     createdStudies.value = []
   }
