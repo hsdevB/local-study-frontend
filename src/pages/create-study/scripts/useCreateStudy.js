@@ -64,6 +64,8 @@ export const useCreateStudy = () => {
 
       if (response.data.success) {
         alert('스터디가 성공적으로 생성되었습니다.')
+        // 사이드바 새로고침 이벤트 발생
+        window.dispatchEvent(new Event('refreshSidebar'))
         router.push('/')
       } else {
         throw new Error(response.data.message || '스터디 생성에 실패했습니다.')

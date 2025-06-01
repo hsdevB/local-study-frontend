@@ -280,7 +280,9 @@ const cancelEditing = () => {
 const handleUpdateProfile = async () => {
   try {
     const token = localStorage.getItem('token')
-    if (!token) return
+    if (!token) {
+      throw new Error('로그인이 필요합니다.')
+    }
 
     // 변경된 필드에 대해서만 인증 확인
     const changedFields = {
@@ -308,17 +310,33 @@ const handleUpdateProfile = async () => {
       return
     }
 
-    const payload = {
-      userId: changedFields.userId ? editedProfile.value.userId : undefined,
-      nickname: changedFields.nickname ? editedProfile.value.nickname : undefined,
-      email: changedFields.email ? editedProfile.value.email : undefined
-    }
+    const payload = {}
 
+    // userId가 변경되었고 중복 확인이 완료된 경우에만 포함
+    if (changedFields.userId && isUserIdVerified.value) {
+      payload.userId = editedProfile.value.userId
+    }
+    if (changedFields.nickname) {
+      payload.nickname = editedProfile.value.nickname
+    }
+    if (changedFields.email) {
+      payload.email = editedProfile.value.email
+    }
     if (editedProfile.value.password) {
       payload.password = editedProfile.value.password
     }
 
-    await axios.put('http://localhost:3000/user/profile', payload, {
+    console.log('Changed fields:', changedFields)
+    console.log('Is userId verified:', isUserIdVerified.value)
+    console.log('Payload:', payload)
+
+    // payload가 비어있는지 확인
+    if (Object.keys(payload).length === 0) {
+      alert('수정할 정보가 없습니다.')
+      return
+    }
+
+    await axios.put('http://localhost:3000/user/info', payload, {
       headers: {
         Authorization: `Bearer ${token}`
       },
@@ -329,6 +347,7 @@ const handleUpdateProfile = async () => {
     isEditing.value = false
     await fetchUserProfile()
     window.dispatchEvent(new Event('profile-updated'))
+    closeModal()
   } catch (error) {
     errorMessage.value = error.response?.data?.message || '프로필 수정 실패'
     alert(errorMessage.value)
