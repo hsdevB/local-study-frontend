@@ -158,8 +158,7 @@ const fetchCreatedStudies = async () => {
     const res = await axios.get('http://localhost:3000/study-application/my-created', {
       headers: { Authorization: `Bearer ${token}` }
     })
-    createdStudies.value = (res.data.data || [])
-      .filter(study => !study.deleted_at)
+    createdStudies.value = res.data.data || []
   } catch {
     createdStudies.value = []
   }
