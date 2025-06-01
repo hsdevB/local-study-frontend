@@ -42,15 +42,13 @@ const goToHome = () => {
 }
 
 const handleSearch = () => {
-  if (searchInput.value.trim()) {
-    // 검색어를 URL 쿼리 파라미터로 전달
-    router.push({
-      path: '/',
-      query: { search: searchInput.value.trim() }
-    })
-    // 검색 이벤트 발생
-    emit('search', searchInput.value.trim())
-  }
+  // 검색어를 URL 쿼리 파라미터로 전달 (빈 문자열도 포함)
+  router.push({
+    path: '/',
+    query: { search: searchInput.value.trim() }
+  })
+  // 검색 이벤트 발생
+  emit('search', searchInput.value.trim())
 }
 
 const emit = defineEmits(['search', 'reset'])
